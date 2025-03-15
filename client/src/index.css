@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --app-scale: 0.85;
+  }
+
+  html {
+    font-size: calc(16px * var(--app-scale));
+    height: 100%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    zoom: var(--app-scale);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #root {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  h1 {
+    @apply text-4xl font-bold;
+    font-size: calc(2.25rem * var(--app-scale));
+  }
+
+  h2 {
+    @apply text-2xl font-semibold;
+    font-size: calc(1.5rem * var(--app-scale));
+  }
+
+  .text-sm {
+    font-size: calc(0.875rem * var(--app-scale));
+  }
+
+  .text-lg {
+    font-size: calc(1.125rem * var(--app-scale));
+  }
+}
