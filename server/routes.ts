@@ -380,16 +380,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Chat endpoint
   app.post("/api/chat", authenticateToken, async (req, res) => {
     try {
-      // Check if user is authenticated
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Nicht authentifiziert" });
-      }
-
       const { message } = req.body;
 
       if (!message) {
         return res.status(400).json({ message: "Keine Nachricht gefunden" });
       }
+
+      // Get the user from the request (set by authenticateToken middleware)
+      const user = req.user;
+      console.log('Processing chat request for user:', user?.id);
 
       const completion = await openai.chat.completions.create({
         model: CHAT_MODEL,
@@ -408,10 +407,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = completion.choices[0].message.content;
       res.json({ response });
     } catch (error) {
-      console.error('OpenAI API Error:', error);
+      console.error('Chat API Error:', error);
+
+      // Specific error handling
+      if (error.response?.status === 401) {
+        return res.status(401).json({ 
+          message: "Authentifizierungsfehler beim OpenAI API-Aufruf" 
+        });
+      }
+
       res.status(500).json({
         message: "Es gab einen Fehler bei der Verarbeitung Ihrer Nachricht",
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unbekannter Fehler'
       });
     }
   });
