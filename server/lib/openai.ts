@@ -22,6 +22,19 @@ async function getUserContext(userId: number) {
     console.log('Starting context fetch for user:', userId);
     const startTime = Date.now();
 
+    // If RAG is disabled, return default context
+    if (process.env.DISABLE_RAG === 'true') {
+      console.log('RAG disabled, using default context');
+      return {
+        user: null,
+        activeProfile: null,
+        recentActivity: {
+          calls: [],
+          customers: []
+        }
+      };
+    }
+
     // Set timeout for database queries
     const timeout = new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Database query timeout')), 5000)
@@ -63,7 +76,6 @@ async function getUserContext(userId: number) {
     };
   } catch (error) {
     console.error('Error in getUserContext:', error);
-    // Return a safe default context
     return {
       user: null,
       activeProfile: null,
@@ -72,39 +84,6 @@ async function getUserContext(userId: number) {
         customers: []
       }
     };
-  }
-}
-
-export async function analyzeSentiment(text: string): Promise<SentimentAnalysis> {
-  try {
-    const response = await openai.chat.completions.create({
-      model: CHAT_MODEL,
-      messages: [
-        {
-          role: "system",
-          content: "Analyze the sentiment of the text and provide a rating from 1-5 stars and a confidence score between 0 and 1. Output in JSON format: { rating: number, confidence: number }",
-        },
-        {
-          role: "user",
-          content: text,
-        },
-      ],
-      response_format: { type: "json_object" },
-    });
-
-    const content = response.choices[0].message.content;
-    if (!content) {
-      throw new Error("No content in response");
-    }
-
-    const result = JSON.parse(content);
-    return {
-      rating: Math.max(1, Math.min(5, Math.round(result.rating))),
-      confidence: Math.max(0, Math.min(1, result.confidence)),
-    };
-  } catch (error) {
-    console.error("Sentiment analysis failed:", error);
-    return { rating: 3, confidence: 0 };
   }
 }
 

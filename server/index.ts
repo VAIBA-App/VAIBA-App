@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { createServer } from "net";
 
 // Set APP_URL based on Replit environment
 const replitDomain = process.env.REPL_SLUG && process.env.REPL_OWNER
@@ -9,6 +10,9 @@ const replitDomain = process.env.REPL_SLUG && process.env.REPL_OWNER
 
 process.env.APP_URL = replitDomain;
 console.log('Environment setup: APP_URL set to', process.env.APP_URL);
+
+// Disable RAG in development for faster startup
+process.env.DISABLE_RAG = process.env.NODE_ENV === 'development' ? 'true' : 'false';
 
 const app = express();
 app.use(express.json());
@@ -50,6 +54,21 @@ app.use((req, res, next) => {
   try {
     console.log('Starting server initialization...');
 
+    // Check if port 5000 is in use
+    const isPortAvailable = await new Promise((resolve) => {
+      const tester = createServer()
+        .once('error', () => resolve(false))
+        .once('listening', () => {
+          tester.once('close', () => resolve(true)).close();
+        })
+        .listen(5000);
+    });
+
+    if (!isPortAvailable) {
+      console.error('Port 5000 is already in use. Please make sure no other instance is running.');
+      process.exit(1);
+    }
+
     // Register routes including auth setup
     const server = await registerRoutes(app);
     console.log('Routes registered successfully');
@@ -80,6 +99,16 @@ app.use((req, res, next) => {
       log(`Serving on port ${PORT}`);
       log(`APP_URL set to: ${process.env.APP_URL}`);
     });
+
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+      console.log('SIGTERM signal received. Closing server...');
+      server.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+      });
+    });
+
   } catch (error) {
     console.error('Server startup failed:', error);
     process.exit(1);
