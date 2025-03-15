@@ -11,12 +11,7 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 import express from 'express';
 import placesRouter from "./routes/places";
-import OpenAI from "openai";
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+import { openai, generateChatResponse } from "./lib/openai";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const CHAT_MODEL = "gpt-4o";
@@ -390,21 +385,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user;
       console.log('Processing chat request for user:', user?.id);
 
-      const completion = await openai.chat.completions.create({
-        model: CHAT_MODEL,
-        messages: [
-          {
-            role: "system",
-            content: "Du bist VAIBA, ein professioneller KI-Assistent für Geschäftskommunikation. Antworte freundlich, präzise und hilfreich."
-          },
-          {
-            role: "user",
-            content: message
-          }
-        ],
-      });
-
-      const response = completion.choices[0].message.content;
+      const response = await generateChatResponse(message, user.id);
       res.json({ response });
     } catch (error) {
       console.error('Chat API Error:', error);
@@ -427,5 +408,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/uploads', express.static(path.resolve(__dirname, "../uploads")));
 
   const httpServer = createServer(app);
+
+  // Add error handling for server creation
+  httpServer.on('error', (error: any) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error('Port 5000 is already in use. Please make sure no other instance is running.');
+      process.exit(1);
+    }
+  });
+
   return httpServer;
 }
