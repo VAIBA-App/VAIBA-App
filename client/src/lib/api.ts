@@ -1,4 +1,5 @@
 import { Customer, Call, Profile, Conversation } from '@db/schema';
+import { useAuthStore } from '@/hooks/use-auth';
 
 const API_BASE = '/api';
 
@@ -7,8 +8,9 @@ async function fetchApi<T>(
   options: RequestInit = {}
 ): Promise<T> {
   try {
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
+    // Get token directly from auth store
+    const token = useAuthStore.getState().token;
+    console.log(`API Request to ${endpoint}`, token ? 'with token' : 'without token');
 
     const response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
