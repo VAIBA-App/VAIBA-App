@@ -13,6 +13,8 @@ console.log('Environment setup: APP_URL set to', process.env.APP_URL);
 
 // Disable RAG in development for faster startup
 process.env.DISABLE_RAG = process.env.NODE_ENV === 'development' ? 'true' : 'false';
+console.log('RAG Integration Status:', process.env.DISABLE_RAG === 'true' ? 'DISABLED' : 'ENABLED');
+console.log('Current Environment:', process.env.NODE_ENV);
 
 const app = express();
 app.use(express.json());
@@ -53,6 +55,10 @@ app.use((req, res, next) => {
 (async () => {
   try {
     console.log('Starting server initialization...');
+    console.log('Verifying environment configuration:');
+    console.log('- NODE_ENV:', process.env.NODE_ENV);
+    console.log('- RAG Status:', process.env.DISABLE_RAG === 'true' ? 'DISABLED' : 'ENABLED');
+    console.log('- APP_URL:', process.env.APP_URL);
 
     // Check if port 5000 is in use
     const isPortAvailable = await new Promise((resolve) => {
@@ -98,6 +104,7 @@ app.use((req, res, next) => {
       log(`Server started successfully`);
       log(`Serving on port ${PORT}`);
       log(`APP_URL set to: ${process.env.APP_URL}`);
+      log(`RAG Integration: ${process.env.DISABLE_RAG === 'true' ? 'DISABLED' : 'ENABLED'}`);
     });
 
     // Graceful shutdown
