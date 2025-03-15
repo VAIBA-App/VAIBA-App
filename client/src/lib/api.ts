@@ -7,13 +7,17 @@ async function fetchApi<T>(
   options: RequestInit = {}
 ): Promise<T> {
   try {
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
+
     const response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
-      // Important: Always include credentials for session cookie handling
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        // Add Authorization header if token exists
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         ...options.headers,
       },
     });

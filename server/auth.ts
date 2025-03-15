@@ -74,11 +74,14 @@ const authenticateToken = async (req: any, res: any, next: any) => {
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
-      return res.status(401).json({ message: "Kein Token vorhanden" });
+      console.log('No token provided');
+      return res.status(401).json({ message: "Authentifizierung erforderlich" });
     }
 
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+
+      // Get user from database
       const [user] = await db
         .select()
         .from(users)
@@ -90,11 +93,14 @@ const authenticateToken = async (req: any, res: any, next: any) => {
         return res.status(401).json({ message: "Ungültiger Token" });
       }
 
+      // Add user to request object
       req.user = user;
+      req.isAuthenticated = () => true;
+
       next();
     } catch (error) {
       console.error('Token validation error:', error);
-      return res.status(403).json({ message: "Ungültiger Token" });
+      return res.status(401).json({ message: "Ungültiger oder abgelaufener Token" });
     }
   } catch (error) {
     console.error('Authentication error:', error);
