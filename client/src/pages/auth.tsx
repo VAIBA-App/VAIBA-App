@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Mail, Key } from "lucide-react";
+import { Mail, Key, Activity } from "lucide-react";
 import { SiGoogle } from "react-icons/si";
 
 const loginSchema = z.object({
@@ -234,9 +234,9 @@ export default function AuthPage() {
       {/* Hero-Sektion */}
       <div className="hidden md:flex flex-col justify-center p-8 bg-primary text-primary-foreground">
         <div className="max-w-md mx-auto space-y-6">
-          <h1 className="text-4xl font-bold">VAIBA - Ihr KI-Sales-Assistent</h1>
+          <h1 className="text-4xl font-bold">VAIBA - Virtueller AI Business Agent</h1>
           <p className="text-lg">
-            Revolutionieren Sie Ihren Vertrieb mit künstlicher Intelligenz. VAIBA unterstützt Sie bei:
+            Revolutionieren und automatisieren Sie Ihr Unternehmen mit künstlicher Intelligenz. VAIBA unterstützt Sie bei:
           </p>
           <ul className="space-y-4 list-none">
             <li className="flex items-center space-x-2">
@@ -245,6 +245,10 @@ export default function AuthPage() {
             </li>
             <li className="flex items-center space-x-2">
               <Key className="h-5 w-5" />
+              <span>Personalisierte Verkaufsstrategien</span>
+            </li>
+            <li className="flex items-center space-x-2">
+              <Activity className="h-5 w-5" />
               <span>Personalisierte Verkaufsstrategien</span>
             </li>
           </ul>

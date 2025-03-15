@@ -126,3 +126,19 @@ export const conversationApi = {
   getByCustomer: (customerId: number) =>
     fetchApi<Conversation[]>(`/customers/${customerId}/conversations`),
 };
+
+// Chat message type definition
+export type ChatMessage = {
+  role: 'assistant' | 'user';
+  content: string;
+};
+
+// Chat endpoints
+export const chatApi = {
+  sendMessage: async (message: string) => {
+    return fetchApi<{ response: string }>('/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    });
+  },
+};

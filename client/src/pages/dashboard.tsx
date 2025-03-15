@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { NetworkStatus } from "@/components/dashboard/network-status";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, RefreshCw, BarChart2, Megaphone, User } from "lucide-react";
-import { useState } from "react";
+import { Send, RefreshCw, BarChart2, Megaphone, User, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { chatApi } from "@/lib/api";
+import { useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 interface ChatMessage {
   role: 'assistant' | 'user';
@@ -17,12 +20,13 @@ interface ChatMessage {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { toast } = useToast();
 
   // Statische Beispieldaten für Stats
   const stats = {
     totalCalls: 157,
     positiveRate: 0.68,
-    averageDuration: 420, // 7 minutes in seconds
+    averageDuration: 420,
     callsByStatus: {
       positive: 107,
       negative: 20,
@@ -56,18 +60,37 @@ export default function Dashboard() {
     { icon: <Megaphone className="w-4 h-4" />, label: "Marketing" },
   ];
 
+  const sendMessageMutation = useMutation({
+    mutationFn: chatApi.sendMessage,
+    onSuccess: (data) => {
+      const assistantMessage: ChatMessage = {
+        role: 'assistant',
+        content: data.response
+      };
+      setMessages(prev => [...prev, assistantMessage]);
+    },
+    onError: (error) => {
+      toast({
+        title: "Fehler",
+        description: "Entschuldigung, es gab einen Fehler bei der Verarbeitung Ihrer Nachricht.",
+        variant: "destructive",
+      });
+      console.error('Chat error:', error);
+    }
+  });
+
   const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMessage: ChatMessage = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
-
-    const assistantMessage: ChatMessage = {
-      role: 'assistant',
-      content: 'Ich verarbeite Ihre Anfrage...'
-    };
-    setMessages(prev => [...prev, assistantMessage]);
     setInput('');
+
+    try {
+      await sendMessageMutation.mutateAsync(input);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    }
   };
 
   if (!user) {
@@ -149,6 +172,13 @@ export default function Dashboard() {
                       </div>
                     </div>
                   ))}
+                  {sendMessageMutation.isPending && (
+                    <div className="flex justify-start">
+                      <div className="rounded-lg px-4 py-2 bg-secondary">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </ScrollArea>
 
@@ -160,8 +190,15 @@ export default function Dashboard() {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                   />
-                  <Button onClick={handleSend}>
-                    <Send className="h-4 w-4" />
+                  <Button 
+                    onClick={handleSend}
+                    disabled={sendMessageMutation.isPending}
+                  >
+                    {sendMessageMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
               </div>

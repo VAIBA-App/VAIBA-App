@@ -11,6 +11,15 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 import express from 'express';
 import placesRouter from "./routes/places";
+import OpenAI from "openai";
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+const CHAT_MODEL = "gpt-4o";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -365,6 +374,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error updating assistant profile:', error);
       res.status(500).json({ message: "Fehler beim Aktualisieren des Profils" });
+    }
+  });
+
+  // Chat endpoint
+  app.post("/api/chat", authenticateToken, async (req, res) => {
+    try {
+      const { message } = req.body;
+
+      if (!message) {
+        return res.status(400).json({ message: "Keine Nachricht gefunden" });
+      }
+
+      const completion = await openai.chat.completions.create({
+        model: CHAT_MODEL,
+        messages: [
+          {
+            role: "system",
+            content: "Du bist VAIBA, ein professioneller KI-Assistent für Geschäftskommunikation. Antworte freundlich, präzise und hilfreich."
+          },
+          {
+            role: "user",
+            content: message
+          }
+        ],
+      });
+
+      const response = completion.choices[0].message.content;
+      res.json({ response });
+    } catch (error) {
+      console.error('OpenAI API Error:', error);
+      res.status(500).json({
+        message: "Es gab einen Fehler bei der Verarbeitung Ihrer Nachricht",
+        error: error.message
+      });
     }
   });
 
