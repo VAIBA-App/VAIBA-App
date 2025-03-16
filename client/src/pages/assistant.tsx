@@ -2,14 +2,15 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, User, Plus, Check, Trash2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { VoiceSettings } from "@/components/voice/VoiceSettings";
+import { profileApi } from "@/lib/api";
 
 interface Profile {
   id: number;
@@ -153,9 +154,6 @@ export default function AssistantPage() {
     }
   };
 
-  // Find active profile
-  const activeProfile = profiles.find(p => p.isActive);
-
   if (isLoadingProfiles) {
     return <div>Lade Profile...</div>;
   }
@@ -183,9 +181,21 @@ export default function AssistantPage() {
     },
   };
 
+  // Find active profile
+  const activeProfile = profiles.find(p => p.isActive);
+
   return (
     <div className="space-y-6">
-      <h1 className="text-4xl font-bold mb-8">Assistent anpassen</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-4xl font-bold">Assistent anpassen</h1>
+        <Button
+          onClick={() => setIsCreatingNew(true)}
+          variant="outline"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Neues Profil erstellen
+        </Button>
+      </div>
 
       {/* Profile List */}
       <Card>
@@ -270,39 +280,28 @@ export default function AssistantPage() {
           />
         </CardContent>
       </Card>
-
-      <div className="flex justify-end">
-        <Button
-          onClick={() => setIsCreatingNew(true)}
-          variant="outline"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Neues Profil erstellen
-        </Button>
-      </div>
     </div>
   );
 }
 
 interface EditProfileFormProps {
   profile: Profile;
-  isNewProfile?: boolean;
+  isNewProfile: boolean;
   onSuccess: () => void;
 }
 
-function EditProfileForm({ profile, isNewProfile = false, onSuccess }: EditProfileFormProps) {
+function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormProps) {
   const { toast } = useToast();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const form = useForm<Profile>({ defaultValues: profile });
+  const form = useForm<Profile>({
+    defaultValues: profile
+  });
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedImage(file);
-      toast({
-        title: "Bild hochgeladen",
-        description: "Das Profilbild wurde hochgeladen. Speichern Sie das Profil, um die Änderungen zu übernehmen.",
-      });
+      form.setValue('imageUrl', URL.createObjectURL(file));
     }
   };
 
@@ -324,26 +323,22 @@ function EditProfileForm({ profile, isNewProfile = false, onSuccess }: EditProfi
 
   const onSubmit = async (data: Profile) => {
     try {
-      const profileData = {
-        ...data,
-        name: data.name.trim(),
-        lastName: data.lastName?.trim(),
-        imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : data.imageUrl,
-        languages: Array.isArray(data.languages)
-          ? data.languages
-          : data.languages.toString().split(',').map(lang => lang.trim()),
-      };
-
-      const url = isNewProfile ? '/api/profiles' : `/api/profiles/${profile.id}`;
-      const method = isNewProfile ? 'POST' : 'PUT';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(profileData),
-      });
+      const response = await fetch(
+        isNewProfile ? '/api/profiles' : `/api/profiles/${profile.id}`,
+        {
+          method: isNewProfile ? 'POST' : 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...data,
+            imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : data.imageUrl,
+            languages: Array.isArray(data.languages)
+              ? data.languages
+              : data.languages.toString().split(',').map(lang => lang.trim()),
+          }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error(isNewProfile ? 'Fehler beim Erstellen des Profils' : 'Fehler beim Aktualisieren des Profils');
@@ -416,7 +411,7 @@ function EditProfileForm({ profile, isNewProfile = false, onSuccess }: EditProfi
             <FormItem>
               <FormLabel>Nachname</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <Input {...field} value={field.value || ''} />
               </FormControl>
             </FormItem>
           )}
@@ -532,7 +527,7 @@ function EditProfileForm({ profile, isNewProfile = false, onSuccess }: EditProfi
                 <Input 
                   {...field} 
                   value={Array.isArray(field.value) ? field.value.join(', ') : field.value}
-                  onChange={(e) => field.onChange(e.target.value)}
+                  onChange={(e) => field.onChange(e.target.value.split(',').map(lang => lang.trim()))}
                 />
               </FormControl>
             </FormItem>
