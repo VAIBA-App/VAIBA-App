@@ -4,9 +4,10 @@ import {
   serial, 
   timestamp, 
   integer,
+  json,
   boolean,
   pgEnum,
-  jsonb
+  varchar,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
@@ -20,7 +21,6 @@ export const userRoleEnum = pgEnum('user_role', ['admin', 'editor', 'user']);
 export const profiles = pgTable("profiles", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  lastName: text("last_name"),
   gender: text("gender").notNull(),
   age: integer("age").notNull(),
   origin: text("origin").notNull(),
@@ -35,7 +35,7 @@ export const profiles = pgTable("profiles", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Schemas
+// Insert schemas
 export const insertProfileSchema = createInsertSchema(profiles);
 export const selectProfileSchema = createSelectSchema(profiles);
 
@@ -64,7 +64,7 @@ export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
   customerId: integer("customer_id").references(() => customers.id),
   customerName: text("customer_name").notNull(),
-  dialog: jsonb("dialog").$type<{
+  dialog: json("dialog").$type<{
     customerText: string;
     gptResponse: string;
   }[]>(),
@@ -79,7 +79,7 @@ export const calls = pgTable("calls", {
   status: callStatusEnum("status").notNull(),
   transcript: text("transcript"),
   audioUrl: text("audio_url"),
-  sentiment: jsonb("sentiment").$type<{
+  sentiment: json("sentiment").$type<{
     rating: number;
     confidence: number;
   }>(),
@@ -90,7 +90,7 @@ export const calls = pgTable("calls", {
 // New auth-related tables
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  email: text("email").notNull().unique(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
   emailVerified: timestamp("email_verified"),
   name: text("name"),
   image: text("image"),
@@ -103,13 +103,13 @@ export const users = pgTable("users", {
 export const accounts = pgTable("accounts", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  type: text("type").notNull(),
-  provider: text("provider").notNull(),
-  providerAccountId: text("provider_account_id").notNull(),
+  type: varchar("type", { length: 255 }).notNull(),
+  provider: varchar("provider", { length: 255 }).notNull(),
+  providerAccountId: varchar("provider_account_id", { length: 255 }).notNull(),
   refreshToken: text("refresh_token"),
   accessToken: text("access_token"),
   expiresAt: integer("expires_at"),
-  tokenType: text("token_type"),
+  tokenType: varchar("token_type", { length: 255 }),
   scope: text("scope"),
   idToken: text("id_token"),
   sessionState: text("session_state"),
@@ -129,8 +129,8 @@ export const sessions = pgTable("sessions", {
 
 export const verificationTokens = pgTable("verification_tokens", {
   id: serial("id").primaryKey(),
-  identifier: text("identifier").notNull(),
-  token: text("token").notNull().unique(),
+  identifier: varchar("identifier", { length: 255 }).notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
   expires: timestamp("expires").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });

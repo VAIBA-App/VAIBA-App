@@ -8,8 +8,7 @@ import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, User, Plus, Check } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { profileApi } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
 
 interface Profile {
   id: number;
@@ -31,7 +30,6 @@ export default function AssistantPage() {
   const { toast } = useToast();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
-  const queryClient = useQueryClient();
 
   const { data: profiles = [], isLoading: isLoadingProfiles, refetch: refetchProfiles } = useQuery({
     queryKey: ['/api/profiles'],
@@ -58,8 +56,20 @@ export default function AssistantPage() {
 
   const activateProfile = async (profileId: number) => {
     try {
-      await profileApi.setActive(profileId);
+      const response = await fetch('/api/profiles/active', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ profileId }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to activate profile');
+      }
+
       await refetchProfiles();
+
       toast({
         title: "Profil aktiviert",
         description: "Das ausgewählte Profil wurde erfolgreich aktiviert.",
@@ -73,9 +83,12 @@ export default function AssistantPage() {
     }
   };
 
-  const handleCreateNewProfile = () => {
-    setIsCreatingNew(true);
-  };
+  // Find active profile
+  const activeProfile = profiles.find(p => p.isActive);
+
+  if (isLoadingProfiles) {
+    return <div>Lade Profile...</div>;
+  }
 
   const emptyProfile: Profile = {
     id: 0,
@@ -93,17 +106,11 @@ export default function AssistantPage() {
     isActive: false,
   };
 
-  // Find active profile
-  const activeProfile = profiles.find(p => p.isActive);
-
-  if (isLoadingProfiles) {
-    return <div>Lade Profile...</div>;
-  }
-
   return (
     <div className="space-y-6">
       <h1 className="text-4xl font-bold mb-8">Assistent anpassen</h1>
 
+      {/* Profile List */}
       <Card>
         <CardHeader>
           <CardTitle>Verfügbare Profile</CardTitle>
@@ -141,6 +148,7 @@ export default function AssistantPage() {
         </CardContent>
       </Card>
 
+      {/* Form */}
       <Card>
         <CardHeader>
           <CardTitle>{isCreatingNew ? "Neues Profil erstellen" : "Profil bearbeiten"}</CardTitle>
@@ -159,7 +167,7 @@ export default function AssistantPage() {
 
       <div className="flex justify-end">
         <Button
-          onClick={handleCreateNewProfile}
+          onClick={() => setIsCreatingNew(true)}
           variant="outline"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -196,7 +204,7 @@ function EditProfileForm({ profile, isNewProfile = false, onSuccess }: EditProfi
     try {
       const profileData = {
         ...data,
-        name: data.name.trim(),
+        name: `${data.name}`.trim(),
         lastName: data.lastName?.trim(),
         imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : data.imageUrl,
         languages: Array.isArray(data.languages)
@@ -204,19 +212,25 @@ function EditProfileForm({ profile, isNewProfile = false, onSuccess }: EditProfi
           : data.languages.toString().split(',').map(lang => lang.trim()),
       };
 
-      if (isNewProfile) {
-        await profileApi.create(profileData);
-        toast({
-          title: "Profil erstellt",
-          description: "Das neue Profil wurde erfolgreich erstellt.",
-        });
-      } else {
-        await profileApi.update(profile.id, profileData);
-        toast({
-          title: "Profil aktualisiert",
-          description: "Die Änderungen wurden erfolgreich gespeichert.",
-        });
+      const url = isNewProfile ? '/api/profiles' : `/api/profiles/${profile.id}`;
+      const method = isNewProfile ? 'POST' : 'PUT';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(profileData),
+      });
+
+      if (!response.ok) {
+        throw new Error(isNewProfile ? 'Fehler beim Erstellen des Profils' : 'Fehler beim Aktualisieren des Profils');
       }
+
+      toast({
+        title: isNewProfile ? "Profil erstellt" : "Profil aktualisiert",
+        description: isNewProfile ? "Das neue Profil wurde erfolgreich erstellt." : "Die Änderungen wurden erfolgreich gespeichert.",
+      });
 
       onSuccess();
     } catch (error) {
