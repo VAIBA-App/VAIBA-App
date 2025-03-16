@@ -9,13 +9,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertProfileSchema } from "@db/schema";
 import type { Profile } from "@db/schema";
 import { VoiceSettings } from "@/components/voice/VoiceSettings";
+import { profileApi } from "@/lib/api";
 
 interface EditProfileFormProps {
   profile: Profile;
   onSuccess: () => void;
+  isNewProfile?: boolean;
 }
 
-export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
+export function EditProfileForm({ profile, onSuccess, isNewProfile = false }: EditProfileFormProps) {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -33,12 +35,11 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
       company: profile.company,
       languages: profile.languages,
       imageUrl: profile.imageUrl || "",
-      isActive: profile.isActive,
     },
   });
 
-  const updateProfileMutation = useMutation({
-    mutationFn: async (data: Profile) => {
+  const mutation = useMutation({
+    mutationFn: async (data: any) => {
       try {
         let imageUrl = data.imageUrl;
         if (selectedImage) {
@@ -58,39 +59,40 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
           imageUrl = uploadResult.url;
         }
 
-        const response = await fetch(`/api/profiles/${profile.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ...data,
-            imageUrl,
-          }),
-        });
+        const profileData = {
+          ...data,
+          imageUrl,
+          languages: Array.isArray(data.languages)
+            ? data.languages
+            : data.languages.split(',').map((lang: string) => lang.trim()),
+        };
 
-        if (!response.ok) {
-          throw new Error('Failed to update profile');
+        if (isNewProfile) {
+          return await profileApi.create(profileData);
+        } else {
+          return await profileApi.update(profile.id, profileData);
         }
-
-        return response.json();
       } catch (error) {
-        console.error('Profile update error:', error);
+        console.error('Profile operation error:', error);
         throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
       toast({
-        title: "Profil aktualisiert",
-        description: "Die Änderungen wurden erfolgreich gespeichert.",
+        title: isNewProfile ? "Profil erstellt" : "Profil aktualisiert",
+        description: isNewProfile
+          ? "Das neue Profil wurde erfolgreich erstellt."
+          : "Die Änderungen wurden erfolgreich gespeichert.",
       });
       onSuccess();
     },
     onError: () => {
       toast({
         title: "Fehler",
-        description: "Das Profil konnte nicht aktualisiert werden.",
+        description: isNewProfile
+          ? "Das Profil konnte nicht erstellt werden."
+          : "Das Profil konnte nicht aktualisiert werden.",
         variant: "destructive",
       });
     },
@@ -105,13 +107,7 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
   };
 
   const onSubmit = async (data: any) => {
-    await updateProfileMutation.mutateAsync({
-      ...data,
-      id: profile.id,
-      languages: Array.isArray(data.languages) 
-        ? data.languages 
-        : data.languages.split(',').map((lang: string) => lang.trim()),
-    });
+    await mutation.mutateAsync(data);
   };
 
   return (
@@ -269,8 +265,11 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
           />
         </div>
 
-        <Button type="submit" className="w-full" disabled={updateProfileMutation.isPending}>
-          {updateProfileMutation.isPending ? "Wird aktualisiert..." : "Profil aktualisieren"}
+        <Button type="submit" className="w-full" disabled={mutation.isPending}>
+          {mutation.isPending
+            ? (isNewProfile ? "Wird erstellt..." : "Wird aktualisiert...")
+            : (isNewProfile ? "Profil erstellen" : "Profil aktualisieren")
+          }
         </Button>
       </form>
     </Form>

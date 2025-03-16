@@ -8,17 +8,13 @@ async function fetchApi<T>(
   options: RequestInit = {}
 ): Promise<T> {
   try {
-    // Get token directly from auth store
     const token = useAuthStore.getState().token;
-    console.log(`API Request to ${endpoint}`, token ? 'with token' : 'without token');
-
     const response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        // Add Authorization header if token exists
         ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         ...options.headers,
       },
@@ -26,7 +22,6 @@ async function fetchApi<T>(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: `HTTP error! status: ${response.status}` }));
-      console.error(`API Error (${response.status}):`, errorData);
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
 
@@ -36,6 +31,32 @@ async function fetchApi<T>(
     throw error;
   }
 }
+
+// Profile endpoints
+export const profileApi = {
+  getAll: () => fetchApi<Profile[]>('/profiles'),
+  get: (id: number) => fetchApi<Profile>(`/profiles/${id}`),
+  getActive: () => fetchApi<Profile>('/profile'),
+  create: (data: Omit<Profile, 'id' | 'createdAt' | 'updatedAt'>) =>
+    fetchApi<Profile>('/profiles', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id: number, data: Partial<Profile>) =>
+    fetchApi<Profile>(`/profiles/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  setActive: (profileId: number) =>
+    fetchApi<Profile>('/profiles/active', {
+      method: 'POST',
+      body: JSON.stringify({ profileId }),
+    }),
+  delete: (id: number) =>
+    fetchApi(`/profiles/${id}`, {
+      method: 'DELETE',
+    }),
+};
 
 // Stats type definition
 export type Stats = {
@@ -53,16 +74,6 @@ export type Stats = {
 // Stats endpoints
 export const statsApi = {
   get: () => fetchApi<Stats>('/stats'),
-};
-
-// Profile endpoints
-export const profileApi = {
-  get: () => fetchApi<Profile>('/profile'),
-  update: (data: Partial<Profile>) =>
-    fetchApi<Profile>('/profile', {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
 };
 
 // Assistant profile endpoints
