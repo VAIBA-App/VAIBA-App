@@ -5,7 +5,7 @@ import { profiles } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
-// Profile validation schema
+// Validation schemas
 const profileSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich"),
   lastName: z.string().nullable().optional(),
@@ -21,7 +21,51 @@ const profileSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
+const loginSchema = z.object({
+  email: z.string().email("Ungültige E-Mail-Adresse"),
+  password: z.string().min(6, "Passwort muss mindestens 6 Zeichen lang sein")
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Login route
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      console.log('Login attempt with:', { email: req.body.email });
+      const result = loginSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({
+          message: "Ungültige Anmeldedaten",
+          errors: result.error.errors
+        });
+      }
+
+      // For development, return a dummy token
+      res.json({ 
+        token: "dummy-token",
+        user: {
+          email: result.data.email,
+          role: "user"
+        }
+      });
+    } catch (error) {
+      console.error('Login error:', error);
+      res.status(500).json({ message: "Anmeldung fehlgeschlagen" });
+    }
+  });
+
+  // User status route
+  app.get("/api/auth/user", (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (token) {
+      res.json({
+        email: "user@example.com",
+        role: "user"
+      });
+    } else {
+      res.status(401).json({ message: "Nicht authentifiziert" });
+    }
+  });
+
   // Profile routes
   app.get("/api/profiles", async (_req, res) => {
     try {
