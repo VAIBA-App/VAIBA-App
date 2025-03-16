@@ -5,11 +5,6 @@ import { db } from "@db";
 import { profiles } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Profile validation schema
 const insertProfileSchema = z.object({
@@ -27,10 +22,8 @@ const insertProfileSchema = z.object({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup auth routes and get the authenticateToken middleware
   const { authenticateToken } = await setupAuth(app);
 
-  // Profile routes
   app.get("/api/profiles", async (_req, res) => {
     try {
       let profilesList = await db.select().from(profiles);
@@ -100,7 +93,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(profile);
     } catch (error) {
       console.error('Error creating profile:', error);
-      res.status(500).json({ message: "Fehler beim Erstellen des Profils" });
+      res.status(500).json({ 
+        message: "Fehler beim Erstellen des Profils",
+        error: error instanceof Error ? error.message : 'Unbekannter Fehler'
+      });
     }
   });
 
@@ -144,7 +140,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Profile activation endpoint
   app.post("/api/profiles/active", async (req, res) => {
     try {
       const { profileId } = req.body;
@@ -378,3 +373,9 @@ const insertCallSchema = z.object({});
 
 const customers = {}; // Placeholder - needs actual schema import
 const calls = {}; // Placeholder - needs actual schema import
+
+// Placeholder for chat response generation (needs implementation)
+async function generateChatResponse(message: string, userId: number): Promise<string> {
+  // Implement your chat response generation logic here. This is a placeholder.
+  return "Placeholder chat response";
+}

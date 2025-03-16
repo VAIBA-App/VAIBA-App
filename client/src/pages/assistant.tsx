@@ -84,75 +84,49 @@ export default function AssistantPage() {
 
   const onSubmit = async (data: AssistantForm) => {
     try {
-      if (isCreatingNew) {
-        // Create new profile
-        const response = await fetch('/api/profiles', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: `${data.name} ${data.lastName}`.trim(),
-            gender: data.gender,
-            age: parseInt(data.age),
-            origin: data.origin,
-            location: data.location,
-            education: data.education,
-            position: data.position,
-            company: data.company,
-            languages: data.languages.split(',').map(lang => lang.trim()),
-            imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : "/default-avatar.png",
-            isActive: false,
-          }),
-        });
+      const profileData = {
+        name: `${data.name} ${data.lastName}`.trim(),
+        gender: data.gender,
+        age: parseInt(data.age),
+        origin: data.origin,
+        location: data.location,
+        education: data.education,
+        position: data.position,
+        company: data.company,
+        languages: data.languages.split(',').map(lang => lang.trim()),
+        imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : "/default-avatar.png",
+        isActive: isCreatingNew ? false : activeProfile?.isActive, //added
+      };
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to create profile');
-        }
-
-        toast({
-          title: "Profil erstellt",
-          description: "Das neue Profil wurde erfolgreich erstellt.",
-        });
-        setIsCreatingNew(false);
-        refetchProfiles();
-      } else {
-        // Update existing profile
-        const activeProfileId = profiles.find(p => p.isActive)?.id;
-        if (!activeProfileId) {
-          throw new Error("Bitte wählen Sie zuerst ein Profil aus.");
-        }
-
-        const response = await fetch(`/api/profiles/${activeProfileId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: `${data.name} ${data.lastName}`.trim(),
-            gender: data.gender,
-            age: parseInt(data.age),
-            origin: data.origin,
-            location: data.location,
-            education: data.education,
-            position: data.position,
-            company: data.company,
-            languages: data.languages.split(',').map(lang => lang.trim()),
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Fehler beim Aktualisieren des Profils");
-        }
-
-        toast({
-          title: "Profil aktualisiert",
-          description: "Die Änderungen wurden erfolgreich gespeichert.",
-        });
-        refetchProfiles();
+      let url = '/api/profiles';
+      let method = 'POST';
+      if (!isCreatingNew && activeProfile?.id) {
+        url = `/api/profiles/${activeProfile.id}`;
+        method = 'PUT';
+        delete profileData.isActive; //remove for update
       }
+
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(profileData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || (method === 'POST' ? 'Failed to create profile' : "Fehler beim Aktualisieren des Profils"));
+      }
+
+      const successMessage = isCreatingNew ? "Profil erstellt" : "Profil aktualisiert";
+      toast({
+        title: successMessage,
+        description: isCreatingNew ? "Das neue Profil wurde erfolgreich erstellt." : "Die Änderungen wurden erfolgreich gespeichert.",
+      });
+      setIsCreatingNew(false);
+      refetchProfiles();
     } catch (error) {
       console.error('Error:', error);
       toast({
