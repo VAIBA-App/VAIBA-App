@@ -8,9 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { EditProfileForm } from "./EditProfileForm";
 import type { Profile } from "@db/schema";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export function ProfileList() {
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
+  const [selectedProfiles, setSelectedProfiles] = useState<Record<number, boolean>>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -63,14 +65,15 @@ export function ProfileList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
       toast({
-        title: "Profil gelöscht",
-        description: "Das Profil wurde erfolgreich gelöscht.",
+        title: "Profile gelöscht",
+        description: "Die ausgewählten Profile wurden erfolgreich gelöscht.",
       });
+      setSelectedProfiles({});
     },
     onError: () => {
       toast({
         title: "Fehler",
-        description: "Das Profil konnte nicht gelöscht werden.",
+        description: "Die Profile konnten nicht gelöscht werden.",
         variant: "destructive",
       });
     },
@@ -80,75 +83,130 @@ export function ProfileList() {
     setActiveProfileMutation.mutate(profileId);
   };
 
-  const handleDeleteProfile = (profileId: number) => {
-    if (window.confirm('Möchten Sie dieses Profil wirklich löschen?')) {
-      deleteProfileMutation.mutate(profileId);
+  const handleDeleteSelectedProfiles = () => {
+    const selectedIds = Object.entries(selectedProfiles)
+      .filter(([_, selected]) => selected)
+      .map(([id]) => parseInt(id));
+
+    if (selectedIds.length === 0) {
+      toast({
+        title: "Keine Profile ausgewählt",
+        description: "Bitte wählen Sie mindestens ein Profil zum Löschen aus.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (window.confirm(`Möchten Sie ${selectedIds.length} Profile wirklich löschen?`)) {
+      selectedIds.forEach(id => deleteProfileMutation.mutate(id));
+    }
+  };
+
+  const toggleProfileSelection = (id: number) => {
+    setSelectedProfiles(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  const toggleAllProfiles = () => {
+    if (!profiles || profiles.length === 0) return;
+
+    const allSelected = profiles.every(profile => selectedProfiles[profile.id]);
+    if (allSelected) {
+      setSelectedProfiles({});
+    } else {
+      const newSelected = profiles.reduce((acc, profile) => {
+        acc[profile.id] = true;
+        return acc;
+      }, {} as Record<number, boolean>);
+      setSelectedProfiles(newSelected);
     }
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          Verfügbare Profile
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Verfügbare Profile
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="destructive"
+              onClick={handleDeleteSelectedProfiles}
+              disabled={Object.keys(selectedProfiles).length === 0}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Ausgewählte löschen
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <div>Lade Profile...</div>
         ) : (
-          <div className="grid gap-4">
-            {profiles?.map((profile) => (
-              <div
-                key={profile.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted"
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-medium">{profile.name}</h3>
-                    <Badge variant="outline">{profile.gender}</Badge>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 mb-4">
+              <Checkbox
+                checked={profiles?.length > 0 && profiles.every(profile => selectedProfiles[profile.id])}
+                onCheckedChange={toggleAllProfiles}
+                id="select-all"
+              />
+              <label htmlFor="select-all" className="text-sm">Alle auswählen</label>
+            </div>
+            <div className="grid gap-4">
+              {profiles?.map((profile) => (
+                <div
+                  key={profile.id}
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted"
+                >
+                  <div className="flex items-center gap-4">
+                    <Checkbox
+                      checked={selectedProfiles[profile.id]}
+                      onCheckedChange={() => toggleProfileSelection(profile.id)}
+                    />
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium">{profile.name}</h3>
+                        <Badge variant="outline">{profile.gender}</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {profile.position} bei {profile.company}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Sprachen: {profile.languages.join(', ')}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {profile.position} bei {profile.company}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Sprachen: {profile.languages.join(', ')}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setEditingProfile(profile)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={profile.isActive ? "default" : "outline"}
+                      onClick={() => handleSetActiveProfile(profile.id)}
+                      className="ml-4"
+                    >
+                      {profile.isActive ? (
+                        <>
+                          <Check className="mr-2 h-4 w-4" />
+                          Aktiv
+                        </>
+                      ) : (
+                        "Aktivieren"
+                      )}
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setEditingProfile(profile)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleDeleteProfile(profile.id)}
-                    className="text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={profile.isActive ? "default" : "outline"}
-                    onClick={() => handleSetActiveProfile(profile.id)}
-                    className="ml-4"
-                  >
-                    {profile.isActive ? (
-                      <>
-                        <Check className="mr-2 h-4 w-4" />
-                        Aktiv
-                      </>
-                    ) : (
-                      "Aktivieren"
-                    )}
-                  </Button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </CardContent>

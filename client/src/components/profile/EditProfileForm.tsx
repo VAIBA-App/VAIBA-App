@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,7 +16,6 @@ interface EditProfileFormProps {
 }
 
 export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const { toast } = useToast();
 
@@ -85,8 +84,7 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
       });
       onSuccess();
     },
-    onError: (error: Error) => {
-      console.error('Profile update error:', error);
+    onError: () => {
       toast({
         title: "Fehler",
         description: "Das Profil konnte nicht aktualisiert werden.",
@@ -105,7 +103,7 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit((data) => updateProfileMutation.mutate(data))} className="space-y-4 mt-6">
+      <form onSubmit={form.handleSubmit((data) => updateProfileMutation.mutate(data as Profile))} className="space-y-4 mt-6">
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -116,10 +114,10 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
                 <FormControl>
                   <Input {...field} />
                 </FormControl>
-                <FormMessage />
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="gender"
@@ -129,7 +127,6 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
                 <FormControl>
                   <Input {...field} />
                 </FormControl>
-                <FormMessage />
               </FormItem>
             )}
           />
@@ -143,16 +140,12 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
               <FormItem>
                 <FormLabel>Alter</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    {...field}
-                    onChange={(e) => field.onChange(parseInt(e.target.value))}
-                  />
+                  <Input {...field} type="number" />
                 </FormControl>
-                <FormMessage />
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="origin"
@@ -162,7 +155,6 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
                 <FormControl>
                   <Input {...field} />
                 </FormControl>
-                <FormMessage />
               </FormItem>
             )}
           />
@@ -177,7 +169,6 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
               <FormControl>
                 <Input {...field} />
               </FormControl>
-              <FormMessage />
             </FormItem>
           )}
         />
@@ -191,7 +182,6 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
               <FormControl>
                 <Input {...field} />
               </FormControl>
-              <FormMessage />
             </FormItem>
           )}
         />
@@ -206,10 +196,10 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
                 <FormControl>
                   <Input {...field} />
                 </FormControl>
-                <FormMessage />
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="company"
@@ -219,7 +209,6 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
                 <FormControl>
                   <Input {...field} />
                 </FormControl>
-                <FormMessage />
               </FormItem>
             )}
           />
@@ -236,10 +225,8 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
                   {...field}
                   value={Array.isArray(field.value) ? field.value.join(', ') : field.value}
                   onChange={(e) => field.onChange(e.target.value.split(',').map(lang => lang.trim()))}
-                  placeholder="Deutsch, Englisch, ..."
                 />
               </FormControl>
-              <FormMessage />
             </FormItem>
           )}
         />
@@ -251,34 +238,26 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
             <FormItem>
               <FormLabel>Profilbild</FormLabel>
               <FormControl>
-                <div className="flex gap-2">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="flex-1"
-                  />
-                  {(selectedImage || field.value) && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedImage(null);
-                        form.setValue('imageUrl', '');
-                      }}
-                    >
-                      Entfernen
-                    </Button>
-                  )}
-                </div>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
               </FormControl>
-              <FormMessage />
             </FormItem>
           )}
         />
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Wird gespeichert..." : "Änderungen speichern"}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Stimmenauswahl</h3>
+          <VoiceSettings
+            onSettingsChange={() => {}}
+            initialVoiceId={profile.voiceId}
+          />
+        </div>
+
+        <Button type="submit" className="w-full" disabled={updateProfileMutation.isPending}>
+          {updateProfileMutation.isPending ? "Wird aktualisiert..." : "Profil aktualisieren"}
         </Button>
       </form>
     </Form>
