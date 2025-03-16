@@ -13,6 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 interface Profile {
   id: number;
   name: string;
+  lastName?: string;
   gender: string;
   age: number;
   origin: string;
@@ -89,6 +90,22 @@ export default function AssistantPage() {
     return <div>Lade Profile...</div>;
   }
 
+  const emptyProfile: Profile = {
+    id: 0,
+    name: "",
+    lastName: "",
+    gender: "",
+    age: 25,
+    origin: "",
+    location: "",
+    education: "",
+    position: "",
+    company: "",
+    languages: [],
+    imageUrl: "/default-avatar.png",
+    isActive: false,
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-4xl font-bold mb-8">Assistent anpassen</h1>
@@ -108,7 +125,7 @@ export default function AssistantPage() {
                 }`}
               >
                 <div>
-                  <p className="font-medium">{profile.name}</p>
+                  <p className="font-medium">{profile.name} {profile.lastName}</p>
                   <p className="text-sm text-muted-foreground">{profile.position} bei {profile.company}</p>
                 </div>
                 <Button
@@ -134,24 +151,11 @@ export default function AssistantPage() {
       {/* Form */}
       <Card>
         <CardHeader>
-          <CardTitle>Profil {isCreatingNew ? "erstellen" : "bearbeiten"}</CardTitle>
+          <CardTitle>{isCreatingNew ? "Neues Profil erstellen" : "Profil bearbeiten"}</CardTitle>
         </CardHeader>
         <CardContent>
           <EditProfileForm
-            profile={activeProfile || {
-              id: 0,
-              name: "",
-              gender: "",
-              age: 25,
-              origin: "",
-              location: "",
-              education: "",
-              position: "",
-              company: "",
-              languages: [],
-              imageUrl: "/default-avatar.png",
-              isActive: false,
-            }}
+            profile={isCreatingNew ? emptyProfile : (activeProfile || emptyProfile)}
             isNewProfile={isCreatingNew}
             onSuccess={() => {
               refetchProfiles();
@@ -200,6 +204,8 @@ function EditProfileForm({ profile, isNewProfile = false, onSuccess }: EditProfi
     try {
       const profileData = {
         ...data,
+        name: `${data.name}`.trim(),
+        lastName: data.lastName?.trim(),
         imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : data.imageUrl,
         languages: Array.isArray(data.languages)
           ? data.languages
@@ -273,7 +279,20 @@ function EditProfileForm({ profile, isNewProfile = false, onSuccess }: EditProfi
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name</FormLabel>
+              <FormLabel>Vorname</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="lastName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nachname</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -405,44 +424,3 @@ function EditProfileForm({ profile, isNewProfile = false, onSuccess }: EditProfi
     </Form>
   );
 }
-
-const ProfileList = ({ profiles, activateProfile }: { profiles: Profile[], activateProfile: (profileId: number) => Promise<void> }) => {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Verfügbare Profile</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {profiles.map((profile) => (
-            <div
-              key={profile.id}
-              className={`flex items-center justify-between p-4 border rounded-lg ${
-                profile.isActive ? 'bg-primary/10' : ''
-              }`}
-            >
-              <div>
-                <p className="font-medium">{profile.name}</p>
-                <p className="text-sm text-muted-foreground">{profile.position} bei {profile.company}</p>
-              </div>
-              <Button
-                onClick={() => activateProfile(profile.id)}
-                variant={profile.isActive ? "secondary" : "outline"}
-                disabled={profile.isActive}
-              >
-                {profile.isActive ? (
-                  <>
-                    <Check className="w-4 h-4 mr-2" />
-                    Aktiv
-                  </>
-                ) : (
-                  "Aktivieren"
-                )}
-              </Button>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
