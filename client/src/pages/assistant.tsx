@@ -10,7 +10,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, User, Plus, Check, Trash2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { VoiceSettings } from "@/components/voice/VoiceSettings";
-import { profileApi } from "@/lib/api";
 
 interface Profile {
   id: number;
@@ -154,10 +153,6 @@ export default function AssistantPage() {
     }
   };
 
-  if (isLoadingProfiles) {
-    return <div>Lade Profile...</div>;
-  }
-
   const emptyProfile: Profile = {
     id: 0,
     name: "",
@@ -180,6 +175,10 @@ export default function AssistantPage() {
       speed: 1,
     },
   };
+
+  if (isLoadingProfiles) {
+    return <div>Lade Profile...</div>;
+  }
 
   // Find active profile
   const activeProfile = profiles.find(p => p.isActive);
@@ -264,7 +263,7 @@ export default function AssistantPage() {
         </CardContent>
       </Card>
 
-      {/* Profile Form */}
+      {/* Edit Profile Form */}
       <Card>
         <CardHeader>
           <CardTitle>{isCreatingNew ? "Neues Profil erstellen" : "Profil bearbeiten"}</CardTitle>
