@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ interface EditProfileFormProps {
 export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const form = useForm({
     resolver: zodResolver(insertProfileSchema),
@@ -32,6 +33,7 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
       company: profile.company,
       languages: profile.languages,
       imageUrl: profile.imageUrl || "",
+      isActive: profile.isActive,
     },
   });
 
@@ -78,6 +80,7 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
       }
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
       toast({
         title: "Profil aktualisiert",
         description: "Die Änderungen wurden erfolgreich gespeichert.",
@@ -101,9 +104,19 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
     }
   };
 
+  const onSubmit = async (data: any) => {
+    await updateProfileMutation.mutateAsync({
+      ...data,
+      id: profile.id,
+      languages: Array.isArray(data.languages) 
+        ? data.languages 
+        : data.languages.split(',').map((lang: string) => lang.trim()),
+    });
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit((data) => updateProfileMutation.mutate(data as Profile))} className="space-y-4 mt-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-6">
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}

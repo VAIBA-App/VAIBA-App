@@ -124,6 +124,9 @@ export function ProfileList() {
     }
   };
 
+  // Finde das aktive Profil
+  const activeProfile = profiles?.find(p => p.isActive);
+
   return (
     <Card>
       <CardHeader>
@@ -214,11 +217,13 @@ export function ProfileList() {
       <Sheet open={!!editingProfile} onOpenChange={() => setEditingProfile(null)}>
         <SheetContent side="right" className="w-[400px] sm:w-[540px]">
           <SheetHeader>
-            <SheetTitle>Profil bearbeiten</SheetTitle>
+            <SheetTitle>
+              {editingProfile?.isActive ? "Aktives Profil bearbeiten" : "Profil bearbeiten"}
+            </SheetTitle>
           </SheetHeader>
           {editingProfile && (
             <EditProfileForm 
-              profile={editingProfile} 
+              profile={editingProfile}
               onSuccess={() => {
                 setEditingProfile(null);
                 queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
