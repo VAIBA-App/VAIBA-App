@@ -4,56 +4,79 @@ import { Profile } from "@db/schema";
 import { profileApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 
 interface ProfileFormProps {
   profile?: Profile;
+  isNewProfile?: boolean;
 }
 
-export function ProfileForm({ profile }: ProfileFormProps) {
+export function ProfileForm({ profile, isNewProfile = false }: ProfileFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const form = useForm<Profile>({
     defaultValues: profile || {
-      name: "Maria Adams",
-      gender: "Female",
-      age: 26,
-      origin: "Irish",
-      location: "Stuttgart",
-      education: "Studium der Informatik in Dublin",
-      position: "Stellvertretende Geschäftsführerin und Sales Managerin",
-      company: "TecSpec",
-      languages: ["Englisch", "Deutsch"],
+      name: "",
+      gender: "",
+      age: 25,
+      origin: "",
+      location: "",
+      education: "",
+      position: "",
+      company: "",
+      languages: [],
     },
   });
 
-  const mutation = useMutation({
-    mutationFn: (data: Profile) => profileApi.update(data),
+  const createProfileMutation = useMutation({
+    mutationFn: (data: Profile) => profileApi.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
       toast({
-        title: "Profile updated",
-        description: "Your changes have been saved successfully.",
+        title: "Profil erstellt",
+        description: "Das neue Profil wurde erfolgreich erstellt.",
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update profile. Please try again.",
+        title: "Fehler",
+        description: "Das Profil konnte nicht erstellt werden.",
         variant: "destructive",
       });
     },
   });
 
+  const updateProfileMutation = useMutation({
+    mutationFn: (data: Profile) => profileApi.update(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
+      toast({
+        title: "Profil aktualisiert",
+        description: "Die Änderungen wurden erfolgreich gespeichert.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Fehler",
+        description: "Das Profil konnte nicht aktualisiert werden.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: Profile) => {
+    if (isNewProfile) {
+      createProfileMutation.mutate(data);
+    } else {
+      updateProfileMutation.mutate(data);
+    }
+  };
+
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit((data) => mutation.mutate(data))}
-        className="space-y-6 max-w-2xl"
-      >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
         <FormField
           control={form.control}
           name="name"
@@ -128,7 +151,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
             <FormItem>
               <FormLabel>Education</FormLabel>
               <FormControl>
-                <Textarea {...field} />
+                <Input {...field} />
               </FormControl>
             </FormItem>
           )}
@@ -160,8 +183,14 @@ export function ProfileForm({ profile }: ProfileFormProps) {
           )}
         />
 
-        <Button type="submit" disabled={mutation.isPending}>
-          {mutation.isPending ? "Saving..." : "Save Changes"}
+        <Button 
+          type="submit" 
+          disabled={createProfileMutation.isPending || updateProfileMutation.isPending}
+        >
+          {isNewProfile
+            ? (createProfileMutation.isPending ? "Erstelle..." : "Profil erstellen")
+            : (updateProfileMutation.isPending ? "Aktualisiere..." : "Profil aktualisieren")
+          }
         </Button>
       </form>
     </Form>
