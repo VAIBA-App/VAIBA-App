@@ -12,12 +12,28 @@ import { fileURLToPath } from "url";
 import express from 'express';
 import placesRouter from "./routes/places";
 import { openai, generateChatResponse } from "./lib/openai";
+import { z } from "zod";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const CHAT_MODEL = "gpt-4o";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Profile validation schema
+const insertProfileSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  gender: z.string(),
+  age: z.number().min(18).max(100),
+  origin: z.string(),
+  location: z.string(),
+  education: z.string(),
+  position: z.string(),
+  company: z.string(),
+  languages: z.array(z.string()),
+  imageUrl: z.string().optional(),
+  isActive: z.boolean().optional(),
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth routes and get the authenticateToken middleware

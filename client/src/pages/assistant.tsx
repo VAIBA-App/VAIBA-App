@@ -138,7 +138,8 @@ export default function AssistantPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create profile');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create profile');
       }
 
       return response.json();
@@ -151,16 +152,15 @@ export default function AssistantPage() {
       setIsCreatingNew(false);
       refetchProfiles();
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Fehler",
-        description: "Das Profil konnte nicht erstellt werden.",
+        description: error.message || "Das Profil konnte nicht erstellt werden.",
         variant: "destructive",
       });
     }
   });
 
-  // Activate profile mutation
   const activateMutation = useMutation({
     mutationFn: async (profileId: number) => {
       const response = await fetch('/api/profiles/active', {
@@ -247,29 +247,6 @@ export default function AssistantPage() {
       } else {
         await updateMutation.mutateAsync(data);
       }
-
-      // Beispiel für Text-to-Speech Test
-      if (data.voice) {
-        const audioBuffer = await elevenLabsService.speakText(
-          "Hallo, ich bin Ihr persönlicher Assistent.",
-          data.voice,
-          {
-            stability: data.stability,
-            similarity_boost: data.similarity,
-            style: data.styleExaggeration,
-            speed: data.speed,
-          }
-        );
-
-        // Spiele den Test-Sound ab
-        const audioContext = new AudioContext();
-        const audioSource = audioContext.createBufferSource();
-        const decodedAudio = await audioContext.decodeAudioData(audioBuffer);
-        audioSource.buffer = decodedAudio;
-        audioSource.connect(audioContext.destination);
-        audioSource.start(0);
-      }
-
     } catch (error) {
       console.error('Error:', error);
       toast({
