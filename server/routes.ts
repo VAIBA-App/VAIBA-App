@@ -4,18 +4,9 @@ import { setupAuth } from "./auth";
 import { db } from "@db";
 import { profiles } from "@db/schema";
 import { eq } from "drizzle-orm";
-import multer from "multer";
-import path from "path";
-import fs from "fs-extra";
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import express from 'express';
-import placesRouter from "./routes/places";
-import { openai, generateChatResponse } from "./lib/openai";
 import { z } from "zod";
-
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const CHAT_MODEL = "gpt-4o";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -39,37 +30,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth routes and get the authenticateToken middleware
   const { authenticateToken } = await setupAuth(app);
 
-  // Register the places router
-  app.use(placesRouter);
-
-  // Set up multer storage for file uploads
-  const upload = multer({
-    storage: multer.diskStorage({
-      destination: async (_req, _file, cb) => {
-        const uploadDir = path.resolve(__dirname, "../uploads");
-        await fs.ensureDir(uploadDir);
-        cb(null, uploadDir);
-      },
-      filename: (_req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + '-' + file.originalname);
-      }
-    }),
-    limits: {
-      fileSize: 5 * 1024 * 1024 // 5MB limit
-    }
-  });
-
-  // Protected file upload endpoint
-  app.post("/api/upload", authenticateToken, upload.single("image"), (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({ message: "Keine Datei hochgeladen" });
-    }
-    res.json({ url: `/uploads/${req.file.filename}` });
-  });
-
   // Profile routes
-  app.get("/api/profiles", authenticateToken, async (_req, res) => {
+  app.get("/api/profiles", async (_req, res) => {
     try {
       let profilesList = await db.select().from(profiles);
       console.log('Fetched profiles:', profilesList);
@@ -116,7 +78,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/profiles", authenticateToken, async (req, res) => {
+  app.post("/api/profiles", async (req, res) => {
     try {
       const result = insertProfileSchema.safeParse(req.body);
       if (!result.success) {
@@ -128,8 +90,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const [profile] = await db
         .insert(profiles)
-        .values(result.data)
+        .values({
+          ...result.data,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
         .returning();
+
       res.json(profile);
     } catch (error) {
       console.error('Error creating profile:', error);
@@ -137,7 +104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/profiles/:id", authenticateToken, async (req, res) => {
+  app.put("/api/profiles/:id", async (req, res) => {
     try {
       const result = insertProfileSchema.safeParse(req.body);
       if (!result.success) {
@@ -149,7 +116,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const [updatedProfile] = await db
         .update(profiles)
-        .set(result.data)
+        .set({
+          ...result.data,
+          updatedAt: new Date(),
+        })
         .where(eq(profiles.id, parseInt(req.params.id)))
         .returning();
 
@@ -164,9 +134,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/profile", authenticateToken, async (_req, res) => {
+  app.get("/api/profile", async (_req, res) => {
     try {
-      const [profile] = await db.select().from(profiles).limit(1);
+      const [profile] = await db.select().from(profiles).where(eq(profiles.isActive, true)).limit(1);
       res.json(profile || null);
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -175,7 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Profile activation endpoint
-  app.post("/api/profiles/active", authenticateToken, async (req, res) => {
+  app.post("/api/profiles/active", async (req, res) => {
     try {
       const { profileId } = req.body;
 
@@ -206,8 +176,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-
-  // Delete profile endpoint
   app.delete("/api/profiles/:id", authenticateToken, async (req, res) => {
     try {
       const [deletedProfile] = await db
@@ -350,88 +318,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Assistant profile routes
-  app.get("/api/assistant-profile", authenticateToken, async (req, res) => {
-    try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Nicht authentifiziert" });
-      }
-
-      const [profile] = await db.select().from(profiles).where(eq(profiles.isActive, true)).limit(1);
-
-      if (!profile) {
-        return res.json({
-          id: 0,
-          name: 'VAIBA',
-          profile_image: '/default-avatar.png'
-        });
-      }
-
-      res.json({
-        id: profile.id,
-        name: profile.name,
-        profile_image: profile.imageUrl
-      });
-    } catch (error) {
-      console.error('Error fetching assistant profile:', error);
-      res.status(500).json({ message: "Fehler beim Laden des Profils" });
-    }
-  });
-
-  app.put("/api/assistant-profile", authenticateToken, async (req, res) => {
-    try {
-      const { name, profile_image } = req.body;
-      console.log('Updating assistant profile with:', { name, profile_image });
-
-      let [profile] = await db.select().from(profiles).where(eq(profiles.isActive, true)).limit(1);
-
-      if (profile) {
-        console.log('Updating existing profile:', profile.id);
-        [profile] = await db
-          .update(profiles)
-          .set({
-            name,
-            imageUrl: profile_image,
-            updatedAt: new Date(),
-          })
-          .where(eq(profiles.id, profile.id))
-          .returning();
-      } else {
-        console.log('Creating new profile');
-        [profile] = await db
-          .insert(profiles)
-          .values({
-            name,
-            imageUrl: profile_image,
-            isActive: true,
-            gender: 'weiblich',
-            age: 26,
-            origin: 'Irisch',
-            location: 'Stuttgart',
-            education: 'Studium der Informatik in Dublin',
-            position: 'Stellvertretende Geschäftsführerin und Sales Managerin',
-            company: 'TecSpec in Stuttgart',
-            languages: ['Englisch', 'Deutsch'],
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          })
-          .returning();
-      }
-
-      console.log('Profile updated successfully:', profile);
-      res.json({
-        id: profile.id,
-        name: profile.name,
-        profile_image: profile.imageUrl
-      });
-    } catch (error) {
-      console.error('Error updating assistant profile:', error);
-      res.status(500).json({ 
-        message: "Fehler beim Aktualisieren des Profils",
-        error: error instanceof Error ? error.message : 'Unbekannter Fehler'
-      });
-    }
-  });
 
   // Chat endpoint
   app.post("/api/chat", authenticateToken, async (req, res) => {
@@ -464,9 +350,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-
-  // Serve uploaded files statically
-  app.use('/uploads', express.static(path.resolve(__dirname, "../uploads")));
 
   const httpServer = createServer(app);
 

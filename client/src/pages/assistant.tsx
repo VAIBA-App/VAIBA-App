@@ -8,15 +8,8 @@ import { Slider } from "@/components/ui/slider";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, Mic, User, Plus } from "lucide-react";
-import { elevenLabsService } from "@/lib/elevenlabs";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { assistantProfileApi } from "@/lib/api";
-
-interface Voice {
-  voice_id: string;
-  name: string;
-}
+import { Upload, User, Plus } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 interface AssistantForm {
   name: string;
@@ -42,11 +35,6 @@ export default function AssistantPage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
 
-  const { data: voices = [], isLoading: isLoadingVoices } = useQuery<Voice[]>({
-    queryKey: ['elevenlabs-voices'],
-    queryFn: () => elevenLabsService.getVoices(),
-  });
-
   // Fetch all profiles
   const { data: profiles = [], isLoading: isLoadingProfiles, refetch: refetchProfiles } = useQuery({
     queryKey: ['/api/profiles'],
@@ -56,14 +44,21 @@ export default function AssistantPage() {
         throw new Error('Failed to fetch profiles');
       }
       const data = await response.json();
+      console.log('Fetched profiles:', data);
       return Array.isArray(data) ? data : [];
     },
   });
 
   // Fetch active profile
-  const { data: activeProfile, isLoading: isProfileLoading, refetch: refetchActiveProfile } = useQuery({
+  const { data: activeProfile } = useQuery({
     queryKey: ['/api/profile'],
-    queryFn: assistantProfileApi.get,
+    queryFn: async () => {
+      const response = await fetch('/api/profile');
+      if (!response.ok) {
+        throw new Error('Failed to fetch active profile');
+      }
+      return response.json();
+    },
   });
 
   const form = useForm<AssistantForm>({
@@ -87,162 +82,10 @@ export default function AssistantPage() {
     },
   });
 
-  // Update-Mutation
-  const updateMutation = useMutation({
-    mutationFn: async (data: AssistantForm) => {
-      const fullName = `${data.name} ${data.lastName}`.trim();
-      return assistantProfileApi.update({
-        name: fullName,
-        profile_image: activeProfile?.profile_image || "/default-avatar.png"
-      });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Profil aktualisiert",
-        description: "Ihre Änderungen wurden erfolgreich gespeichert.",
-      });
-      refetchActiveProfile();
-      refetchProfiles();
-    },
-    onError: () => {
-      toast({
-        title: "Fehler",
-        description: "Das Profil konnte nicht aktualisiert werden.",
-        variant: "destructive",
-      });
-    }
-  });
-
-  // Create-Mutation
-  const createMutation = useMutation({
-    mutationFn: async (data: AssistantForm) => {
-      const fullName = `${data.name} ${data.lastName}`.trim();
-      const response = await fetch('/api/profiles', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: fullName,
-          gender: data.gender,
-          age: parseInt(data.age),
-          origin: data.origin,
-          location: data.location,
-          education: data.education,
-          position: data.position,
-          company: data.company,
-          languages: data.languages.split(',').map(lang => lang.trim()),
-          imageUrl: "/default-avatar.png",
-          isActive: false,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create profile');
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Profil erstellt",
-        description: "Das neue Profil wurde erfolgreich erstellt.",
-      });
-      setIsCreatingNew(false);
-      refetchProfiles();
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Fehler",
-        description: error.message || "Das Profil konnte nicht erstellt werden.",
-        variant: "destructive",
-      });
-    }
-  });
-
-  const activateMutation = useMutation({
-    mutationFn: async (profileId: number) => {
-      const response = await fetch('/api/profiles/active', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ profileId }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to activate profile');
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Profil aktiviert",
-        description: "Das ausgewählte Profil wurde aktiviert.",
-      });
-      refetchActiveProfile();
-      refetchProfiles();
-    },
-    onError: () => {
-      toast({
-        title: "Fehler",
-        description: "Das Profil konnte nicht aktiviert werden.",
-        variant: "destructive",
-      });
-    }
-  });
-
-  async function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (file) {
-      try {
-        console.log('Starting image upload process...');
-
-        const base64String = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            console.log('File converted to base64');
-            resolve(reader.result as string);
-          };
-          reader.onerror = (error) => {
-            console.error('Error converting file to base64:', error);
-            reject(error);
-          };
-          reader.readAsDataURL(file);
-        });
-
-        console.log('Updating assistant profile...');
-
-        await assistantProfileApi.update({
-          name: activeProfile?.name || form.getValues("name"),
-          profile_image: base64String
-        });
-
-        console.log('Profile updated successfully');
-
-        setSelectedImage(file);
-        await refetchActiveProfile();
-
-        toast({
-          title: "Bild hochgeladen",
-          description: "Das Profilbild wurde erfolgreich gespeichert.",
-        });
-      } catch (error) {
-        console.error('Error during image upload:', error);
-        toast({
-          title: "Fehler beim Upload",
-          description: "Das Bild konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
-          variant: "destructive",
-        });
-      }
-    }
-  }
-
   const onSubmit = async (data: AssistantForm) => {
     try {
       if (isCreatingNew) {
+        // Create new profile
         const response = await fetch('/api/profiles', {
           method: 'POST',
           headers: {
@@ -258,7 +101,7 @@ export default function AssistantPage() {
             position: data.position,
             company: data.company,
             languages: data.languages.split(',').map(lang => lang.trim()),
-            imageUrl: "/default-avatar.png",
+            imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : "/default-avatar.png",
             isActive: false,
           }),
         });
@@ -275,9 +118,10 @@ export default function AssistantPage() {
         setIsCreatingNew(false);
         refetchProfiles();
       } else {
+        // Update existing profile
         const activeProfileId = profiles.find(p => p.isActive)?.id;
         if (!activeProfileId) {
-          throw new Error("Kein aktives Profil ausgewählt");
+          throw new Error("Bitte wählen Sie zuerst ein Profil aus.");
         }
 
         const response = await fetch(`/api/profiles/${activeProfileId}`, {
@@ -319,7 +163,55 @@ export default function AssistantPage() {
     }
   };
 
-  if (isLoadingProfiles || isProfileLoading) {
+  const activateProfile = async (profileId: number) => {
+    try {
+      const response = await fetch('/api/profiles/active', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ profileId }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to activate profile');
+      }
+
+      toast({
+        title: "Profil aktiviert",
+        description: "Das ausgewählte Profil wurde aktiviert.",
+      });
+      refetchProfiles();
+    } catch (error) {
+      toast({
+        title: "Fehler",
+        description: "Das Profil konnte nicht aktiviert werden.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  async function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        setSelectedImage(file);
+        toast({
+          title: "Bild hochgeladen",
+          description: "Das Profilbild wurde erfolgreich hochgeladen. Speichern Sie das Profil um die Änderungen zu übernehmen.",
+        });
+      } catch (error) {
+        console.error('Error during image upload:', error);
+        toast({
+          title: "Fehler beim Upload",
+          description: "Das Bild konnte nicht hochgeladen werden. Bitte versuchen Sie es erneut.",
+          variant: "destructive",
+        });
+      }
+    }
+  }
+
+  if (isLoadingProfiles) {
     return <div>Lade...</div>;
   }
 
@@ -346,7 +238,7 @@ export default function AssistantPage() {
                   <p className="text-sm text-muted-foreground">{profile.position} bei {profile.company}</p>
                 </div>
                 <Button
-                  onClick={() => activateMutation.mutate(profile.id)}
+                  onClick={() => activateProfile(profile.id)}
                   variant={profile.isActive ? "secondary" : "outline"}
                   disabled={profile.isActive}
                 >
@@ -366,11 +258,11 @@ export default function AssistantPage() {
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form className="space-y-4">
                 <div className="flex flex-col items-center space-y-4">
                   <Avatar className="w-32 h-32">
                     <AvatarImage
-                      src={selectedImage ? URL.createObjectURL(selectedImage) : (activeProfile?.profile_image || "/default-avatar.png")}
+                      src={selectedImage ? URL.createObjectURL(selectedImage) : (activeProfile?.imageUrl || "/default-avatar.png")}
                       alt="Profilbild"
                     />
                     <AvatarFallback>
@@ -568,14 +460,14 @@ export default function AssistantPage() {
           </CardContent>
         </Card>
 
-        {/* ElevenLabs Einstellungen */}
+        {/* Stimmeneinstellungen */}
         <Card>
           <CardHeader>
             <CardTitle>Stimmeneinstellungen</CardTitle>
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form className="space-y-6">
                 <FormField
                   control={form.control}
                   name="voice"
@@ -585,15 +477,12 @@ export default function AssistantPage() {
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder={isLoadingVoices ? "Lade Stimmen..." : "Wählen Sie eine Stimme"} />
+                            <SelectValue placeholder="Wählen Sie eine Stimme" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {voices.map((voice) => (
-                            <SelectItem key={voice.voice_id} value={voice.voice_id}>
-                              {voice.name}
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="voice1">Stimme 1</SelectItem>
+                          <SelectItem value="voice2">Stimme 2</SelectItem>
                         </SelectContent>
                       </Select>
                     </FormItem>
@@ -677,10 +566,6 @@ export default function AssistantPage() {
                     )}
                   />
                 </div>
-
-                <Button type="submit" className="w-full">
-                  Einstellungen speichern
-                </Button>
               </form>
             </Form>
           </CardContent>
