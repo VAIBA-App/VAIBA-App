@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, Mic, User } from "lucide-react";
 import { elevenLabsService } from "@/lib/elevenlabs";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { assistantProfileApi } from "@/lib/api";
 
 interface Voice {
@@ -20,6 +20,7 @@ interface Voice {
 
 interface AssistantForm {
   name: string;
+  lastName: string; // Neues Feld für Nachname
   gender: string;
   age: string;
   origin: string;
@@ -53,7 +54,8 @@ export default function AssistantPage() {
 
   const form = useForm<AssistantForm>({
     defaultValues: {
-      name: "Maria Adams",
+      name: "Maria",
+      lastName: "Adams", // Default Nachname
       gender: "weiblich",
       age: "26",
       origin: "Irisch",
@@ -72,13 +74,37 @@ export default function AssistantPage() {
     },
   });
 
+  // Speichern-Mutation
+  const saveMutation = useMutation({
+    mutationFn: async (data: AssistantForm) => {
+      const fullName = `${data.name} ${data.lastName}`.trim();
+      return assistantProfileApi.update({
+        name: fullName,
+        profile_image: profile?.profile_image || "/default-avatar.png"
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Profil gespeichert",
+        description: "Ihre Änderungen wurden erfolgreich gespeichert.",
+      });
+      refetchProfile();
+    },
+    onError: () => {
+      toast({
+        title: "Fehler",
+        description: "Das Profil konnte nicht gespeichert werden.",
+        variant: "destructive",
+      });
+    }
+  });
+
   async function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (file) {
       try {
         console.log('Starting image upload process...');
 
-        // Konvertiere Datei zu Base64
         const base64String = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onloadend = () => {
@@ -94,7 +120,6 @@ export default function AssistantPage() {
 
         console.log('Updating assistant profile...');
 
-        // Update das Profil mit dem neuen Bild
         await assistantProfileApi.update({
           name: profile?.name || form.getValues("name"),
           profile_image: base64String
@@ -102,7 +127,6 @@ export default function AssistantPage() {
 
         console.log('Profile updated successfully');
 
-        // Aktualisiere die UI
         setSelectedImage(file);
         await refetchProfile();
 
@@ -123,6 +147,9 @@ export default function AssistantPage() {
 
   const onSubmit = async (data: AssistantForm) => {
     try {
+      // Speichere zuerst das Profil
+      await saveMutation.mutateAsync(data);
+
       // Beispiel für Text-to-Speech Test
       if (data.voice) {
         const audioBuffer = await elevenLabsService.speakText(
@@ -145,10 +172,6 @@ export default function AssistantPage() {
         audioSource.start(0);
       }
 
-      toast({
-        title: "Erfolgreich gespeichert",
-        description: "Die Assistenten-Einstellungen wurden aktualisiert.",
-      });
     } catch (error) {
       console.error('Error:', error);
       toast({
@@ -206,7 +229,20 @@ export default function AssistantPage() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name</FormLabel>
+                      <FormLabel>Vorname</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nachname</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -326,6 +362,10 @@ export default function AssistantPage() {
                     </FormItem>
                   )}
                 />
+
+                <Button type="submit" className="w-full">
+                  Profil speichern
+                </Button>
               </form>
             </Form>
           </CardContent>
