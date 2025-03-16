@@ -71,8 +71,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Protect profile routes
   app.get("/api/profiles", authenticateToken, async (_req, res) => {
     try {
-      const profilesList = await db.select().from(profiles);
+      let profilesList = await db.select().from(profiles);
       console.log('Fetched profiles:', profilesList);
+
+      // Wenn keine Profile existieren, fügen wir das Default-Profil hinzu
+      if (profilesList.length === 0) {
+        const [defaultProfile] = await db
+          .insert(profiles)
+          .values({
+            name: "Maria Adams",
+            gender: "weiblich",
+            age: 26,
+            origin: "Irisch",
+            location: "Stuttgart",
+            education: "Studium der Informatik in Dublin",
+            position: "Stellvertretende Geschäftsführerin und Sales Managerin",
+            company: "TecSpec in Stuttgart",
+            languages: ["Englisch", "Deutsch"],
+            imageUrl: "/default-avatar.png",
+            isActive: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .returning();
+
+        profilesList = [defaultProfile];
+      }
 
       // Ensure we always return an array
       const profilesArray = Array.isArray(profilesList) ? profilesList : [];

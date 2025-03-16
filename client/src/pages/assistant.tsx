@@ -243,15 +243,60 @@ export default function AssistantPage() {
   const onSubmit = async (data: AssistantForm) => {
     try {
       if (isCreatingNew) {
-        await createMutation.mutateAsync(data);
+        // Erstelle ein neues Profil
+        await createMutation.mutateAsync({
+          ...data,
+          age: parseInt(data.age),
+          languages: data.languages.split(',').map(lang => lang.trim()),
+          imageUrl: "/default-avatar.png",
+          isActive: false,
+        });
       } else {
-        await updateMutation.mutateAsync(data);
+        // Aktualisiere das bestehende Profil
+        const activeProfileId = activeProfile?.id;
+        if (!activeProfileId) {
+          throw new Error("Kein aktives Profil ausgewählt");
+        }
+
+        const response = await fetch(`/api/profiles/${activeProfileId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: `${data.name} ${data.lastName}`.trim(),
+            gender: data.gender,
+            age: parseInt(data.age),
+            origin: data.origin,
+            location: data.location,
+            education: data.education,
+            position: data.position,
+            company: data.company,
+            languages: data.languages.split(',').map(lang => lang.trim()),
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Fehler beim Aktualisieren des Profils");
+        }
+      }
+
+      toast({
+        title: isCreatingNew ? "Profil erstellt" : "Profil aktualisiert",
+        description: "Die Änderungen wurden erfolgreich gespeichert.",
+      });
+
+      // Aktualisiere die Profilliste und setze den Erstellungsmodus zurück
+      refetchProfiles();
+      if (isCreatingNew) {
+        setIsCreatingNew(false);
       }
     } catch (error) {
       console.error('Error:', error);
       toast({
         title: "Fehler",
-        description: "Die Änderungen konnten nicht gespeichert werden.",
+        description: error instanceof Error ? error.message : "Die Änderungen konnten nicht gespeichert werden.",
         variant: "destructive",
       });
     }
@@ -475,17 +520,27 @@ export default function AssistantPage() {
 
                 <div className="flex gap-2">
                   <Button
-                    type="submit"
+                    type="button"
                     className="flex-1"
-                    onClick={() => setIsCreatingNew(false)}
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      setIsCreatingNew(false);
+                      const values = form.getValues();
+                      await onSubmit(values);
+                    }}
                   >
                     Profil aktualisieren
                   </Button>
                   <Button
-                    type="submit"
+                    type="button"
                     variant="outline"
                     className="flex-1"
-                    onClick={() => setIsCreatingNew(true)}
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      setIsCreatingNew(true);
+                      const values = form.getValues();
+                      await onSubmit(values);
+                    }}
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Neues Profil erstellen
