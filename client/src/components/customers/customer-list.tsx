@@ -24,11 +24,9 @@ export function CustomerList({ customers }: CustomerListProps) {
   };
 
   const toggleAllCustomers = () => {
-    if (!customers) return;
+    if (!customers || customers.length === 0) return;
 
-    const allSelected = customers.length > 0 && 
-      customers.every(customer => selectedCustomers[customer.id]);
-
+    const allSelected = customers.every(customer => selectedCustomers[customer.id]);
     if (allSelected) {
       setSelectedCustomers({});
     } else {
@@ -60,12 +58,10 @@ export function CustomerList({ customers }: CustomerListProps) {
       ));
 
       queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
-
       toast({
         title: "Kunden gelöscht",
         description: `${selectedIds.length} Kunden wurden erfolgreich gelöscht.`,
       });
-
       setSelectedCustomers({});
     } catch (error) {
       console.error('Error deleting customers:', error);

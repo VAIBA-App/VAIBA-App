@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
-import { profiles, users } from "@db/schema";
+import { profiles, users, customers } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -192,8 +192,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Customer routes
   app.get("/api/customers", async (_req, res) => {
-    const customersList = await db.select().from(customers);
-    res.json(customersList);
+    try {
+      const customersList = await db.select().from(customers);
+      console.log('Fetched customers:', customersList);
+      res.json(customersList);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+      res.status(500).json({ 
+        message: "Error loading customers",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
   });
 
   app.post("/api/customers", async (req, res) => {
@@ -362,11 +371,4 @@ const insertCustomerSchema = z.object({});
 // Placeholder for call schema (needs implementation)
 const insertCallSchema = z.object({});
 
-const customers = {}; // Placeholder - needs actual schema import
 const calls = {}; // Placeholder - needs actual schema import
-
-// Placeholder for chat response generation (needs implementation)
-async function generateChatResponse(message: string, userId: number): Promise<string> {
-  // Implement your chat response generation logic here. This is a placeholder.
-  return "Placeholder chat response";
-}
