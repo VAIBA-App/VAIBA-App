@@ -83,6 +83,9 @@ export default function AssistantPage() {
         title: "Profil aktiviert",
         description: "Das ausgewählte Profil wurde erfolgreich aktiviert.",
       });
+
+      // Reload the page after successful activation
+      window.location.reload();
     } catch (error) {
       toast({
         title: "Fehler",
@@ -185,16 +188,7 @@ export default function AssistantPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-4xl font-bold">Assistent anpassen</h1>
-        <Button
-          onClick={() => setIsCreatingNew(true)}
-          variant="outline"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Neues Profil erstellen
-        </Button>
-      </div>
+      <h1 className="text-4xl font-bold">Assistent anpassen</h1>
 
       {/* Profile List */}
       <Card>
@@ -239,8 +233,13 @@ export default function AssistantPage() {
                     className="w-4 h-4"
                   />
                   <div>
-                    <p className="font-medium">{profile.name} {profile.lastName}</p>
-                    <p className="text-sm text-muted-foreground">{profile.position} bei {profile.company}</p>
+                    <p className="font-medium">
+                      {profile.name}
+                      {profile.lastName ? ` ${profile.lastName}` : ''}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {profile.position} bei {profile.company}
+                    </p>
                   </div>
                 </div>
                 <Button
@@ -279,6 +278,19 @@ export default function AssistantPage() {
           />
         </CardContent>
       </Card>
+
+      {/* Create New Profile Button */}
+      {!isCreatingNew && (
+        <div className="flex justify-end">
+          <Button
+            onClick={() => setIsCreatingNew(true)}
+            variant="outline"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Neues Profil erstellen
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -322,16 +334,6 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
 
   const onSubmit = async (data: Profile) => {
     try {
-      const profileData = {
-        ...data,
-        name: data.name.trim(),
-        lastName: data.lastName?.trim(),
-        imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : data.imageUrl,
-        languages: Array.isArray(data.languages)
-          ? data.languages
-          : data.languages.toString().split(',').map(lang => lang.trim()),
-      };
-
       let response;
       if (isNewProfile) {
         response = await fetch('/api/profiles', {
@@ -339,7 +341,15 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(profileData),
+          body: JSON.stringify({
+            ...data,
+            name: data.name.trim(),
+            lastName: data.lastName?.trim(),
+            imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : data.imageUrl,
+            languages: Array.isArray(data.languages)
+              ? data.languages
+              : data.languages.toString().split(',').map(lang => lang.trim()),
+          }),
         });
       } else {
         response = await fetch(`/api/profiles/${profile.id}`, {
@@ -347,7 +357,15 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(profileData),
+          body: JSON.stringify({
+            ...data,
+            name: data.name.trim(),
+            lastName: data.lastName?.trim(),
+            imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : data.imageUrl,
+            languages: Array.isArray(data.languages)
+              ? data.languages
+              : data.languages.toString().split(',').map(lang => lang.trim()),
+          }),
         });
       }
 
