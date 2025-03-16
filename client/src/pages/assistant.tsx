@@ -243,7 +243,6 @@ export default function AssistantPage() {
   const onSubmit = async (data: AssistantForm) => {
     try {
       if (isCreatingNew) {
-        // Erstelle ein neues Profil
         const response = await fetch('/api/profiles', {
           method: 'POST',
           headers: {
@@ -276,8 +275,7 @@ export default function AssistantPage() {
         setIsCreatingNew(false);
         refetchProfiles();
       } else {
-        // Aktualisiere das bestehende Profil
-        const activeProfileId = activeProfile?.id;
+        const activeProfileId = profiles.find(p => p.isActive)?.id;
         if (!activeProfileId) {
           throw new Error("Kein aktives Profil ausgewählt");
         }

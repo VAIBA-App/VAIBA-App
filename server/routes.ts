@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { db } from "@db";
-import { profiles, customers, calls } from "@db/schema";
+import { profiles } from "@db/schema";
 import { eq } from "drizzle-orm";
 import multer from "multer";
 import path from "path";
@@ -68,7 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ url: `/uploads/${req.file.filename}` });
   });
 
-  // Protect profile routes
+  // Profile routes
   app.get("/api/profiles", authenticateToken, async (_req, res) => {
     try {
       let profilesList = await db.select().from(profiles);
@@ -106,9 +106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Ensure we always return an array
-      const profilesArray = Array.isArray(profilesList) ? profilesList : [];
-      res.json(profilesArray);
+      res.json(profilesList);
     } catch (error) {
       console.error('Error fetching profiles:', error);
       res.status(500).json({ 
@@ -136,6 +134,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error creating profile:', error);
       res.status(500).json({ message: "Fehler beim Erstellen des Profils" });
+    }
+  });
+
+  app.put("/api/profiles/:id", authenticateToken, async (req, res) => {
+    try {
+      const result = insertProfileSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({
+          message: "Ungültige Profildaten",
+          errors: result.error.errors
+        });
+      }
+
+      const [updatedProfile] = await db
+        .update(profiles)
+        .set(result.data)
+        .where(eq(profiles.id, parseInt(req.params.id)))
+        .returning();
+
+      if (!updatedProfile) {
+        return res.status(404).json({ message: "Profil nicht gefunden" });
+      }
+
+      res.json(updatedProfile);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      res.status(500).json({ message: "Fehler beim Aktualisieren des Profils" });
     }
   });
 
@@ -181,32 +206,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/profiles/:id", authenticateToken, async (req, res) => {
-    try {
-      const result = insertProfileSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({
-          message: "Ungültige Profildaten",
-          errors: result.error.errors
-        });
-      }
-
-      const [updatedProfile] = await db
-        .update(profiles)
-        .set(result.data)
-        .where(eq(profiles.id, parseInt(req.params.id)))
-        .returning();
-
-      if (!updatedProfile) {
-        return res.status(404).json({ message: "Profil nicht gefunden" });
-      }
-
-      res.json(updatedProfile);
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      res.status(500).json({ message: "Fehler beim Aktualisieren des Profils" });
-    }
-  });
 
   // Delete profile endpoint
   app.delete("/api/profiles/:id", authenticateToken, async (req, res) => {
@@ -481,3 +480,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   return httpServer;
 }
+
+// Placeholder for sentiment analysis function (needs implementation)
+async function analyzeSentiment(transcript: string): Promise<string | undefined> {
+  // Implement your sentiment analysis logic here.  This is a placeholder.
+  return undefined;
+}
+
+// Placeholder for customer schema (needs implementation)
+const insertCustomerSchema = z.object({});
+
+// Placeholder for call schema (needs implementation)
+const insertCallSchema = z.object({});
+
+const customers = {}; // Placeholder - needs actual schema import
+const calls = {}; // Placeholder - needs actual schema import
