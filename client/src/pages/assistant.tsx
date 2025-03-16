@@ -264,7 +264,7 @@ export default function AssistantPage() {
         </CardContent>
       </Card>
 
-      {/* Form */}
+      {/* Profile Form */}
       <Card>
         <CardHeader>
           <CardTitle>{isCreatingNew ? "Neues Profil erstellen" : "Profil bearbeiten"}</CardTitle>
@@ -323,22 +323,34 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
 
   const onSubmit = async (data: Profile) => {
     try {
-      const response = await fetch(
-        isNewProfile ? '/api/profiles' : `/api/profiles/${profile.id}`,
-        {
-          method: isNewProfile ? 'POST' : 'PUT',
+      const profileData = {
+        ...data,
+        name: data.name.trim(),
+        lastName: data.lastName?.trim(),
+        imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : data.imageUrl,
+        languages: Array.isArray(data.languages)
+          ? data.languages
+          : data.languages.toString().split(',').map(lang => lang.trim()),
+      };
+
+      let response;
+      if (isNewProfile) {
+        response = await fetch('/api/profiles', {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            ...data,
-            imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : data.imageUrl,
-            languages: Array.isArray(data.languages)
-              ? data.languages
-              : data.languages.toString().split(',').map(lang => lang.trim()),
-          }),
-        }
-      );
+          body: JSON.stringify(profileData),
+        });
+      } else {
+        response = await fetch(`/api/profiles/${profile.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(profileData),
+        });
+      }
 
       if (!response.ok) {
         throw new Error(isNewProfile ? 'Fehler beim Erstellen des Profils' : 'Fehler beim Aktualisieren des Profils');
