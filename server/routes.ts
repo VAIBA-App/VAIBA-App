@@ -56,10 +56,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/profiles", authenticateToken, async (_req, res) => {
     try {
       const profilesList = await db.select().from(profiles);
-      res.json(profilesList);
+      console.log('Fetched profiles:', profilesList);
+
+      // Ensure we always return an array
+      const profilesArray = Array.isArray(profilesList) ? profilesList : [];
+      res.json(profilesArray);
     } catch (error) {
       console.error('Error fetching profiles:', error);
-      res.status(500).json({ message: "Fehler beim Laden der Profile" });
+      res.status(500).json({ 
+        message: "Fehler beim Laden der Profile",
+        error: error instanceof Error ? error.message : 'Unbekannter Fehler'
+      });
     }
   });
 

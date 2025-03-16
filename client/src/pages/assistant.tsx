@@ -50,7 +50,14 @@ export default function AssistantPage() {
   // Fetch all profiles
   const { data: profiles = [], isLoading: isLoadingProfiles, refetch: refetchProfiles } = useQuery({
     queryKey: ['/api/profiles'],
-    queryFn: () => fetch('/api/profiles').then(res => res.json()),
+    queryFn: async () => {
+      const response = await fetch('/api/profiles');
+      if (!response.ok) {
+        throw new Error('Failed to fetch profiles');
+      }
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    },
   });
 
   // Fetch active profile
@@ -289,8 +296,8 @@ export default function AssistantPage() {
         <CardContent>
           <div className="space-y-4">
             {profiles.map((profile: any) => (
-              <div 
-                key={profile.id} 
+              <div
+                key={profile.id}
                 className={`flex items-center justify-between p-4 border rounded-lg ${
                   profile.isActive ? 'bg-primary/10' : ''
                 }`}
@@ -490,14 +497,14 @@ export default function AssistantPage() {
                 />
 
                 <div className="flex gap-2">
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="flex-1"
                     onClick={() => setIsCreatingNew(false)}
                   >
                     Profil aktualisieren
                   </Button>
-                  <Button 
+                  <Button
                     type="submit"
                     variant="outline"
                     className="flex-1"
