@@ -9,8 +9,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send, RefreshCw, BarChart2, Megaphone, User, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { chatApi } from "@/lib/api";
-import { useMutation } from "@tanstack/react-query";
+import { chatApi, assistantProfileApi } from "@/lib/api";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
 interface ChatMessage {
@@ -22,37 +22,23 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Statische Beispieldaten für Stats
-  const stats = {
-    totalCalls: 157,
-    positiveRate: 0.68,
-    averageDuration: 420,
-    callsByStatus: {
-      positive: 107,
-      negative: 20,
-      neutral: 30,
-      active: 5
-    }
+  // Fetch assistant profile
+  const { data: assistantProfile } = useQuery({
+    queryKey: ['/api/assistant-profile'],
+    queryFn: assistantProfileApi.get,
+  });
+
+  // Initialize chat with personalized greeting
+  const getInitialGreeting = () => {
+    const assistantName = assistantProfile?.name || "VAIBA";
+    return {
+      role: 'assistant' as const,
+      content: `Hallo! Ich bin ${assistantName}. Ich bin Ihr persönlicher VAIBA Assistent. Wie kann ich Ihnen heute helfen?`
+    };
   };
 
-  const chartData = [
-    { date: '2024-01', calls: 65 },
-    { date: '2024-02', calls: 75 },
-    { date: '2024-03', calls: 85 },
-  ];
-
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: 'assistant',
-      content: 'Hallo! Ich bin Ihr persönlicher VAIBA Assistent. Wie kann ich Ihnen heute helfen?'
-    }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([getInitialGreeting()]);
   const [input, setInput] = useState('');
-
-  const assistantProfile = {
-    name: "VAIBA",
-    profile_image: "/default-avatar.png"
-  };
 
   const quickCommands = [
     { icon: <RefreshCw className="w-4 h-4" />, label: "Update abrufen" },
@@ -111,15 +97,15 @@ export default function Dashboard() {
             <CardContent className="flex flex-col items-center space-y-2">
               <Avatar className="w-24 h-24">
                 <AvatarImage 
-                  src={assistantProfile.profile_image} 
-                  alt={assistantProfile.name} 
+                  src={assistantProfile?.profile_image || "/default-avatar.png"} 
+                  alt={assistantProfile?.name || "VAIBA"} 
                 />
                 <AvatarFallback>
                   <User className="w-12 h-12 text-muted-foreground" />
                 </AvatarFallback>
               </Avatar>
               <div className="text-center">
-                <h3 className="font-semibold text-lg">{assistantProfile.name}</h3>
+                <h3 className="font-semibold text-lg">{assistantProfile?.name || "VAIBA"}</h3>
               </div>
             </CardContent>
           </Card>
@@ -149,7 +135,7 @@ export default function Dashboard() {
         <div className="lg:col-span-3">
           <Card className="h-[calc(50vh-2rem)]">
             <CardHeader>
-              <CardTitle>Chat mit {assistantProfile.name}</CardTitle>
+              <CardTitle>Chat mit {assistantProfile?.name || "VAIBA"}</CardTitle>
             </CardHeader>
             <CardContent className="h-full flex flex-col">
               <ScrollArea className="flex-1 pr-4">
@@ -234,3 +220,21 @@ export default function Dashboard() {
     </div>
   );
 }
+
+const stats = {
+  totalCalls: 157,
+  positiveRate: 0.68,
+  averageDuration: 420,
+  callsByStatus: {
+    positive: 107,
+    negative: 20,
+    neutral: 30,
+    active: 5
+  }
+};
+
+const chartData = [
+  { date: '2024-01', calls: 65 },
+  { date: '2024-02', calls: 75 },
+  { date: '2024-03', calls: 85 },
+];
