@@ -75,27 +75,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Fetched profiles:', profilesList);
 
       // Wenn keine Profile existieren, fügen wir das Default-Profil hinzu
-      if (profilesList.length === 0) {
-        const [defaultProfile] = await db
-          .insert(profiles)
-          .values({
-            name: "Maria Adams",
-            gender: "weiblich",
-            age: 26,
-            origin: "Irisch",
-            location: "Stuttgart",
-            education: "Studium der Informatik in Dublin",
-            position: "Stellvertretende Geschäftsführerin und Sales Managerin",
-            company: "TecSpec in Stuttgart",
-            languages: ["Englisch", "Deutsch"],
-            imageUrl: "/default-avatar.png",
-            isActive: true,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          })
-          .returning();
+      if (!profilesList || profilesList.length === 0) {
+        const defaultProfileData = {
+          name: "Maria Adams",
+          gender: "weiblich",
+          age: 26,
+          origin: "Irisch",
+          location: "Stuttgart",
+          education: "Studium der Informatik in Dublin",
+          position: "Stellvertretende Geschäftsführerin und Sales Managerin",
+          company: "TecSpec in Stuttgart",
+          languages: ["Englisch", "Deutsch"],
+          imageUrl: "/default-avatar.png",
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
 
-        profilesList = [defaultProfile];
+        try {
+          const [defaultProfile] = await db
+            .insert(profiles)
+            .values(defaultProfileData)
+            .returning();
+
+          profilesList = [defaultProfile];
+          console.log('Created default profile:', defaultProfile);
+        } catch (insertError) {
+          console.error('Error creating default profile:', insertError);
+          throw insertError;
+        }
       }
 
       // Ensure we always return an array

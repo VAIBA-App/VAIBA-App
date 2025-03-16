@@ -244,13 +244,37 @@ export default function AssistantPage() {
     try {
       if (isCreatingNew) {
         // Erstelle ein neues Profil
-        await createMutation.mutateAsync({
-          ...data,
-          age: parseInt(data.age),
-          languages: data.languages.split(',').map(lang => lang.trim()),
-          imageUrl: "/default-avatar.png",
-          isActive: false,
+        const response = await fetch('/api/profiles', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: `${data.name} ${data.lastName}`.trim(),
+            gender: data.gender,
+            age: parseInt(data.age),
+            origin: data.origin,
+            location: data.location,
+            education: data.education,
+            position: data.position,
+            company: data.company,
+            languages: data.languages.split(',').map(lang => lang.trim()),
+            imageUrl: "/default-avatar.png",
+            isActive: false,
+          }),
         });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to create profile');
+        }
+
+        toast({
+          title: "Profil erstellt",
+          description: "Das neue Profil wurde erfolgreich erstellt.",
+        });
+        setIsCreatingNew(false);
+        refetchProfiles();
       } else {
         // Aktualisiere das bestehende Profil
         const activeProfileId = activeProfile?.id;
@@ -280,17 +304,12 @@ export default function AssistantPage() {
           const errorData = await response.json();
           throw new Error(errorData.message || "Fehler beim Aktualisieren des Profils");
         }
-      }
 
-      toast({
-        title: isCreatingNew ? "Profil erstellt" : "Profil aktualisiert",
-        description: "Die Änderungen wurden erfolgreich gespeichert.",
-      });
-
-      // Aktualisiere die Profilliste und setze den Erstellungsmodus zurück
-      refetchProfiles();
-      if (isCreatingNew) {
-        setIsCreatingNew(false);
+        toast({
+          title: "Profil aktualisiert",
+          description: "Die Änderungen wurden erfolgreich gespeichert.",
+        });
+        refetchProfiles();
       }
     } catch (error) {
       console.error('Error:', error);
