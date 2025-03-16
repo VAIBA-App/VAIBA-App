@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, User, Plus, Check } from "lucide-react";
+import { Upload, User, Plus, Check, Trash2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { VoiceSettings } from "@/components/voice/VoiceSettings";
 
@@ -38,6 +38,7 @@ export default function AssistantPage() {
   const { toast } = useToast();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [selectedProfiles, setSelectedProfiles] = useState<Record<number, boolean>>({});
 
   const { data: profiles = [], isLoading: isLoadingProfiles, refetch: refetchProfiles } = useQuery({
     queryKey: ['/api/profiles'],
@@ -91,6 +92,67 @@ export default function AssistantPage() {
     }
   };
 
+  const handleDeleteSelectedProfiles = async () => {
+    const selectedIds = Object.entries(selectedProfiles)
+      .filter(([_, selected]) => selected)
+      .map(([id]) => parseInt(id));
+
+    if (selectedIds.length === 0) {
+      toast({
+        title: "Keine Profile ausgewählt",
+        description: "Bitte wählen Sie mindestens ein Profil zum Löschen aus.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (window.confirm(`Möchten Sie ${selectedIds.length} Profile wirklich löschen?`)) {
+      try {
+        await Promise.all(
+          selectedIds.map((id) =>
+            fetch(`/api/profiles/${id}`, { method: 'DELETE' })
+          )
+        );
+
+        toast({
+          title: "Profile gelöscht",
+          description: `${selectedIds.length} Profile wurden erfolgreich gelöscht.`,
+        });
+
+        setSelectedProfiles({});
+        refetchProfiles();
+      } catch (error) {
+        toast({
+          title: "Fehler",
+          description: "Die Profile konnten nicht gelöscht werden.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const toggleProfileSelection = (id: number) => {
+    setSelectedProfiles(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  const toggleAllProfiles = () => {
+    if (!profiles || profiles.length === 0) return;
+
+    const allSelected = profiles.every(profile => selectedProfiles[profile.id]);
+    if (allSelected) {
+      setSelectedProfiles({});
+    } else {
+      const newSelected = profiles.reduce((acc, profile) => {
+        acc[profile.id] = true;
+        return acc;
+      }, {} as Record<number, boolean>);
+      setSelectedProfiles(newSelected);
+    }
+  };
+
   // Find active profile
   const activeProfile = profiles.find(p => p.isActive);
 
@@ -128,10 +190,31 @@ export default function AssistantPage() {
       {/* Profile List */}
       <Card>
         <CardHeader>
-          <CardTitle>Verfügbare Profile</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Verfügbare Profile</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="destructive"
+                onClick={handleDeleteSelectedProfiles}
+                disabled={Object.keys(selectedProfiles).length === 0}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Ausgewählte löschen
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Input
+                type="checkbox"
+                checked={profiles.length > 0 && profiles.every(profile => selectedProfiles[profile.id])}
+                onChange={toggleAllProfiles}
+                className="w-4 h-4"
+              />
+              <span className="text-sm">Alle auswählen</span>
+            </div>
             {profiles.map((profile) => (
               <div
                 key={profile.id}
@@ -139,9 +222,17 @@ export default function AssistantPage() {
                   profile.isActive ? 'bg-primary/10' : ''
                 }`}
               >
-                <div>
-                  <p className="font-medium">{profile.name} {profile.lastName}</p>
-                  <p className="text-sm text-muted-foreground">{profile.position} bei {profile.company}</p>
+                <div className="flex items-center gap-4">
+                  <Input
+                    type="checkbox"
+                    checked={selectedProfiles[profile.id]}
+                    onChange={() => toggleProfileSelection(profile.id)}
+                    className="w-4 h-4"
+                  />
+                  <div>
+                    <p className="font-medium">{profile.name} {profile.lastName}</p>
+                    <p className="text-sm text-muted-foreground">{profile.position} bei {profile.company}</p>
+                  </div>
                 </div>
                 <Button
                   onClick={() => activateProfile(profile.id)}
@@ -235,7 +326,7 @@ function EditProfileForm({ profile, isNewProfile = false, onSuccess }: EditProfi
     try {
       const profileData = {
         ...data,
-        name: `${data.name}`.trim(),
+        name: data.name.trim(),
         lastName: data.lastName?.trim(),
         imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : data.imageUrl,
         languages: Array.isArray(data.languages)
