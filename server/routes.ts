@@ -149,7 +149,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update profile endpoint
   app.put("/api/profiles/:id", authenticateToken, async (req, res) => {
     try {
       const result = insertProfileSchema.safeParse(req.body);
