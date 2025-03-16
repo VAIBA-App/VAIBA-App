@@ -8,7 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, Mic, User } from "lucide-react";
+import { Upload, Mic, User, Plus } from "lucide-react";
 import { elevenLabsService } from "@/lib/elevenlabs";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { assistantProfileApi } from "@/lib/api";
@@ -20,7 +20,7 @@ interface Voice {
 
 interface AssistantForm {
   name: string;
-  lastName: string; // Neues Feld für Nachname
+  lastName: string;
   gender: string;
   age: string;
   origin: string;
@@ -30,7 +30,6 @@ interface AssistantForm {
   company: string;
   languages: string;
   profileImage: string;
-
   voice: string;
   speed: number;
   stability: number;
@@ -41,21 +40,29 @@ interface AssistantForm {
 export default function AssistantPage() {
   const { toast } = useToast();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
 
   const { data: voices = [], isLoading: isLoadingVoices } = useQuery<Voice[]>({
     queryKey: ['elevenlabs-voices'],
     queryFn: () => elevenLabsService.getVoices(),
   });
 
-  const { data: profile, isLoading: isProfileLoading, refetch: refetchProfile } = useQuery({
-    queryKey: ['/api/assistant-profile'],
+  // Fetch all profiles
+  const { data: profiles = [], isLoading: isLoadingProfiles, refetch: refetchProfiles } = useQuery({
+    queryKey: ['/api/profiles'],
+    queryFn: () => fetch('/api/profiles').then(res => res.json()),
+  });
+
+  // Fetch active profile
+  const { data: activeProfile, isLoading: isProfileLoading, refetch: refetchActiveProfile } = useQuery({
+    queryKey: ['/api/profile'],
     queryFn: assistantProfileApi.get,
   });
 
   const form = useForm<AssistantForm>({
     defaultValues: {
       name: "Maria",
-      lastName: "Adams", // Default Nachname
+      lastName: "Adams",
       gender: "weiblich",
       age: "26",
       origin: "Irisch",
@@ -65,7 +72,6 @@ export default function AssistantPage() {
       company: "TecSpec in Stuttgart",
       languages: "Englisch und Deutsch",
       profileImage: "/default-avatar.png",
-
       voice: "",
       speed: 1.0,
       stability: 0.5,
@@ -74,26 +80,108 @@ export default function AssistantPage() {
     },
   });
 
-  // Speichern-Mutation
-  const saveMutation = useMutation({
+  // Update-Mutation
+  const updateMutation = useMutation({
     mutationFn: async (data: AssistantForm) => {
       const fullName = `${data.name} ${data.lastName}`.trim();
       return assistantProfileApi.update({
         name: fullName,
-        profile_image: profile?.profile_image || "/default-avatar.png"
+        profile_image: activeProfile?.profile_image || "/default-avatar.png"
       });
     },
     onSuccess: () => {
       toast({
-        title: "Profil gespeichert",
+        title: "Profil aktualisiert",
         description: "Ihre Änderungen wurden erfolgreich gespeichert.",
       });
-      refetchProfile();
+      refetchActiveProfile();
+      refetchProfiles();
     },
     onError: () => {
       toast({
         title: "Fehler",
-        description: "Das Profil konnte nicht gespeichert werden.",
+        description: "Das Profil konnte nicht aktualisiert werden.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Create-Mutation
+  const createMutation = useMutation({
+    mutationFn: async (data: AssistantForm) => {
+      const fullName = `${data.name} ${data.lastName}`.trim();
+      const response = await fetch('/api/profiles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: fullName,
+          gender: data.gender,
+          age: parseInt(data.age),
+          origin: data.origin,
+          location: data.location,
+          education: data.education,
+          position: data.position,
+          company: data.company,
+          languages: data.languages.split(',').map(lang => lang.trim()),
+          imageUrl: "/default-avatar.png",
+          isActive: false,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create profile');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Profil erstellt",
+        description: "Das neue Profil wurde erfolgreich erstellt.",
+      });
+      setIsCreatingNew(false);
+      refetchProfiles();
+    },
+    onError: () => {
+      toast({
+        title: "Fehler",
+        description: "Das Profil konnte nicht erstellt werden.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Activate profile mutation
+  const activateMutation = useMutation({
+    mutationFn: async (profileId: number) => {
+      const response = await fetch('/api/profiles/active', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ profileId }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to activate profile');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Profil aktiviert",
+        description: "Das ausgewählte Profil wurde aktiviert.",
+      });
+      refetchActiveProfile();
+      refetchProfiles();
+    },
+    onError: () => {
+      toast({
+        title: "Fehler",
+        description: "Das Profil konnte nicht aktiviert werden.",
         variant: "destructive",
       });
     }
@@ -121,14 +209,14 @@ export default function AssistantPage() {
         console.log('Updating assistant profile...');
 
         await assistantProfileApi.update({
-          name: profile?.name || form.getValues("name"),
+          name: activeProfile?.name || form.getValues("name"),
           profile_image: base64String
         });
 
         console.log('Profile updated successfully');
 
         setSelectedImage(file);
-        await refetchProfile();
+        await refetchActiveProfile();
 
         toast({
           title: "Bild hochgeladen",
@@ -147,8 +235,11 @@ export default function AssistantPage() {
 
   const onSubmit = async (data: AssistantForm) => {
     try {
-      // Speichere zuerst das Profil
-      await saveMutation.mutateAsync(data);
+      if (isCreatingNew) {
+        await createMutation.mutateAsync(data);
+      } else {
+        await updateMutation.mutateAsync(data);
+      }
 
       // Beispiel für Text-to-Speech Test
       if (data.voice) {
@@ -182,9 +273,44 @@ export default function AssistantPage() {
     }
   };
 
+  if (isLoadingProfiles || isProfileLoading) {
+    return <div>Lade...</div>;
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-4xl font-bold mb-8">Assistent anpassen</h1>
+
+      {/* Profile List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Verfügbare Profile</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {profiles.map((profile: any) => (
+              <div 
+                key={profile.id} 
+                className={`flex items-center justify-between p-4 border rounded-lg ${
+                  profile.isActive ? 'bg-primary/10' : ''
+                }`}
+              >
+                <div>
+                  <p className="font-medium">{profile.name}</p>
+                  <p className="text-sm text-muted-foreground">{profile.position} bei {profile.company}</p>
+                </div>
+                <Button
+                  onClick={() => activateMutation.mutate(profile.id)}
+                  variant={profile.isActive ? "secondary" : "outline"}
+                  disabled={profile.isActive}
+                >
+                  {profile.isActive ? "Aktiv" : "Aktivieren"}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Verkäuferprofil */}
@@ -198,7 +324,7 @@ export default function AssistantPage() {
                 <div className="flex flex-col items-center space-y-4">
                   <Avatar className="w-32 h-32">
                     <AvatarImage
-                      src={selectedImage ? URL.createObjectURL(selectedImage) : (profile?.profile_image || "/default-avatar.png")}
+                      src={selectedImage ? URL.createObjectURL(selectedImage) : (activeProfile?.profile_image || "/default-avatar.png")}
                       alt="Profilbild"
                     />
                     <AvatarFallback>
@@ -363,9 +489,24 @@ export default function AssistantPage() {
                   )}
                 />
 
-                <Button type="submit" className="w-full">
-                  Profil speichern
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    type="submit" 
+                    className="flex-1"
+                    onClick={() => setIsCreatingNew(false)}
+                  >
+                    Profil aktualisieren
+                  </Button>
+                  <Button 
+                    type="submit"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setIsCreatingNew(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Neues Profil erstellen
+                  </Button>
+                </div>
               </form>
             </Form>
           </CardContent>
