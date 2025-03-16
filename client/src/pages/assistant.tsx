@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, User, Plus, Check } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { VoiceSettings } from "@/components/voice/VoiceSettings";
 
 interface Profile {
   id: number;
@@ -24,6 +25,13 @@ interface Profile {
   languages: string[];
   imageUrl: string;
   isActive: boolean;
+  voiceId?: string;
+  voiceSettings?: {
+    stability: number;
+    similarityBoost: number;
+    style: number;
+    speed: number;
+  };
 }
 
 export default function AssistantPage() {
@@ -104,6 +112,13 @@ export default function AssistantPage() {
     languages: [],
     imageUrl: "/default-avatar.png",
     isActive: false,
+    voiceId: "",
+    voiceSettings: {
+      stability: 0.5,
+      similarityBoost: 0.75,
+      style: 0,
+      speed: 1,
+    },
   };
 
   return (
@@ -198,6 +213,22 @@ function EditProfileForm({ profile, isNewProfile = false, onSuccess }: EditProfi
         description: "Das Profilbild wurde hochgeladen. Speichern Sie das Profil, um die Änderungen zu übernehmen.",
       });
     }
+  };
+
+  const handleVoiceSettingsChange = (settings: {
+    voiceId: string;
+    stability: number;
+    similarityBoost: number;
+    style: number;
+    speed: number;
+  }) => {
+    form.setValue('voiceId', settings.voiceId);
+    form.setValue('voiceSettings', {
+      stability: settings.stability,
+      similarityBoost: settings.similarityBoost,
+      style: settings.style,
+      speed: settings.speed,
+    });
   };
 
   const onSubmit = async (data: Profile) => {
@@ -416,6 +447,16 @@ function EditProfileForm({ profile, isNewProfile = false, onSuccess }: EditProfi
             </FormItem>
           )}
         />
+
+        {/* Voice Settings */}
+        <div className="space-y-4 border rounded-lg p-4">
+          <h3 className="text-lg font-medium">Stimme auswählen</h3>
+          <VoiceSettings
+            onSettingsChange={handleVoiceSettingsChange}
+            initialVoiceId={profile.voiceId}
+            initialSettings={profile.voiceSettings}
+          />
+        </div>
 
         <Button type="submit">
           {isNewProfile ? "Profil erstellen" : "Profil aktualisieren"}

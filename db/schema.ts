@@ -21,6 +21,7 @@ export const userRoleEnum = pgEnum('user_role', ['admin', 'editor', 'user']);
 export const profiles = pgTable("profiles", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  lastName: text("last_name"),
   gender: text("gender").notNull(),
   age: integer("age").notNull(),
   origin: text("origin").notNull(),
@@ -30,6 +31,13 @@ export const profiles = pgTable("profiles", {
   company: text("company").notNull(),
   languages: text("languages").array().notNull(),
   imageUrl: text("image_url"),
+  voiceId: text("voice_id"),
+  voiceSettings: json("voice_settings").$type<{
+    stability: number;
+    similarityBoost: number;
+    style: number;
+    speed: number;
+  }>(),
   isActive: boolean("is_active").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
