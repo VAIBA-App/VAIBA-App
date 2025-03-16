@@ -4,7 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { elevenLabsService } from "@/lib/elevenlabs";
-import { Mic } from "lucide-react";
+import { Mic, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface VoiceSettingsProps {
   onSettingsChange: (settings: {
@@ -19,6 +20,8 @@ interface VoiceSettingsProps {
 export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
   const [voices, setVoices] = useState<Array<{ voice_id: string; name: string }>>([]);
   const [selectedVoice, setSelectedVoice] = useState("21m00Tcm4TlvDq8ikWAM");
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
   const [settings, setSettings] = useState({
     stability: 0.5,
     similarityBoost: 0.75,
@@ -39,10 +42,24 @@ export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
 
   const loadVoices = async () => {
     try {
+      setIsLoading(true);
       const availableVoices = await elevenLabsService.getVoices();
-      setVoices(availableVoices);
+      if (availableVoices.length > 0) {
+        setVoices(availableVoices);
+        // Setze die erste Stimme als Standard, wenn keine ausgewählt ist
+        if (!selectedVoice && availableVoices[0]?.voice_id) {
+          setSelectedVoice(availableVoices[0].voice_id);
+        }
+      }
     } catch (error) {
       console.error("Failed to load voices:", error);
+      toast({
+        title: "Fehler beim Laden der Stimmen",
+        description: "Die Stimmen konnten nicht geladen werden. Bitte versuchen Sie es später erneut.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -64,18 +81,24 @@ export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <Label>Stimme auswählen</Label>
-          <Select value={selectedVoice} onValueChange={setSelectedVoice}>
-            <SelectTrigger>
-              <SelectValue placeholder="Wähle eine Stimme" />
-            </SelectTrigger>
-            <SelectContent>
-              {voices.map((voice) => (
-                <SelectItem key={voice.voice_id} value={voice.voice_id}>
-                  {voice.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : (
+            <Select value={selectedVoice} onValueChange={setSelectedVoice}>
+              <SelectTrigger>
+                <SelectValue placeholder="Wähle eine Stimme" />
+              </SelectTrigger>
+              <SelectContent>
+                {voices.map((voice) => (
+                  <SelectItem key={voice.voice_id} value={voice.voice_id}>
+                    {voice.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         <div className="space-y-4">
