@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, User, Plus } from "lucide-react";
+import { Upload, User, Plus, Check } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 interface AssistantForm {
@@ -22,11 +22,6 @@ interface AssistantForm {
   company: string;
   languages: string;
   profileImage: string;
-  voice: string;
-  speed: number;
-  stability: number;
-  similarity: number;
-  styleExaggeration: number;
 }
 
 export default function AssistantPage() {
@@ -34,7 +29,6 @@ export default function AssistantPage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
 
-  // Fetch all profiles
   const { data: profiles = [], isLoading: isLoadingProfiles, refetch: refetchProfiles } = useQuery({
     queryKey: ['/api/profiles'],
     queryFn: async () => {
@@ -62,11 +56,6 @@ export default function AssistantPage() {
       company: "TecSpec in Stuttgart",
       languages: "Englisch, Deutsch",
       profileImage: "/default-avatar.png",
-      voice: "",
-      speed: 1.0,
-      stability: 0.5,
-      similarity: 0.75,
-      styleExaggeration: 0.3,
     },
   });
 
@@ -86,12 +75,12 @@ export default function AssistantPage() {
         imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : "/default-avatar.png",
       };
 
-      const activeProfile = profiles.find(p => p.isActive);
-      const url = isCreatingNew ? '/api/profiles' : `/api/profiles/${activeProfile?.id}`;
+      const url = isCreatingNew ? '/api/profiles' : `/api/profiles/${profiles.find(p => p.isActive)?.id}`;
+      const method = isCreatingNew ? 'POST' : 'PUT';
 
       console.log('Sending request to:', url);
       const response = await fetch(url, {
-        method: isCreatingNew ? 'POST' : 'PUT',
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -108,7 +97,6 @@ export default function AssistantPage() {
         description: isCreatingNew ? "Das neue Profil wurde erfolgreich erstellt." : "Die Änderungen wurden erfolgreich gespeichert.",
       });
 
-      setIsCreatingNew(false);
       refetchProfiles();
     } catch (error) {
       console.error('Error:', error);
@@ -131,6 +119,35 @@ export default function AssistantPage() {
     }
   };
 
+  const activateProfile = async (profileId: number) => {
+    try {
+      const response = await fetch('/api/profiles/active', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ profileId }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to activate profile');
+      }
+
+      await refetchProfiles();
+
+      toast({
+        title: "Profil aktiviert",
+        description: "Das ausgewählte Profil wurde erfolgreich aktiviert.",
+      });
+    } catch (error) {
+      toast({
+        title: "Fehler",
+        description: "Das Profil konnte nicht aktiviert werden.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoadingProfiles) {
     return <div>Lade Profile...</div>;
   }
@@ -138,6 +155,44 @@ export default function AssistantPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-4xl font-bold mb-8">Assistent anpassen</h1>
+
+      {/* Profile List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Verfügbare Profile</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {profiles.map((profile: any) => (
+              <div
+                key={profile.id}
+                className={`flex items-center justify-between p-4 border rounded-lg ${
+                  profile.isActive ? 'bg-primary/10' : ''
+                }`}
+              >
+                <div>
+                  <p className="font-medium">{profile.name}</p>
+                  <p className="text-sm text-muted-foreground">{profile.position} bei {profile.company}</p>
+                </div>
+                <Button
+                  onClick={() => activateProfile(profile.id)}
+                  variant={profile.isActive ? "secondary" : "outline"}
+                  disabled={profile.isActive}
+                >
+                  {profile.isActive ? (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Aktiv
+                    </>
+                  ) : (
+                    "Aktivieren"
+                  )}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Form */}
       <Card>
