@@ -8,10 +8,8 @@ import {
   boolean,
   pgEnum,
   varchar,
-  primaryKey
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
-import { relations } from "drizzle-orm";
 
 // Enums
 export const callStatusEnum = pgEnum('call_status', ['positive', 'negative', 'neutral']);
@@ -32,17 +30,17 @@ export const profiles = pgTable("profiles", {
   languages: text("languages").array().notNull(),
   imageUrl: text("image_url"),
   isActive: boolean("is_active").default(false),
-  voiceId: text("voice_id"),
-  voiceSettings: json("voice_settings").$type<{
-    stability: number;
-    similarityBoost: number;
-    style: number;
-    speed: number;
-  }>(),
-  userId: integer("user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+// Insert schemas
+export const insertProfileSchema = createInsertSchema(profiles);
+export const selectProfileSchema = createSelectSchema(profiles);
+
+// Types
+export type Profile = typeof profiles.$inferSelect;
+export type InsertProfile = typeof profiles.$inferInsert;
 
 // Customers table
 export const customers = pgTable("customers", {
@@ -157,7 +155,6 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
 }));
 
 // Schema types
-export type Profile = typeof profiles.$inferSelect;
 export type Customer = typeof customers.$inferSelect;
 export type Call = typeof calls.$inferSelect;
 export type Conversation = typeof conversations.$inferSelect;
@@ -165,9 +162,16 @@ export type User = typeof users.$inferSelect;
 export type Account = typeof accounts.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type VerificationToken = typeof verificationTokens.$inferSelect;
+export type InsertCustomer = typeof customers.$inferInsert;
+export type InsertCall = typeof calls.$inferInsert;
+export type InsertConversation = typeof conversations.$inferInsert;
+export type InsertUser = typeof users.$inferInsert;
+export type InsertAccount = typeof accounts.$inferInsert;
+export type InsertSession = typeof sessions.$inferInsert;
+export type InsertVerificationToken = typeof verificationTokens.$inferInsert;
+
 
 // Insert schemas
-export const insertProfileSchema = createInsertSchema(profiles);
 export const insertCustomerSchema = createInsertSchema(customers);
 export const insertCallSchema = createInsertSchema(calls);
 export const insertConversationSchema = createInsertSchema(conversations);
@@ -177,7 +181,6 @@ export const insertSessionSchema = createInsertSchema(sessions);
 export const insertVerificationTokenSchema = createInsertSchema(verificationTokens);
 
 // Select schemas
-export const selectProfileSchema = createSelectSchema(profiles);
 export const selectCustomerSchema = createSelectSchema(customers);
 export const selectCallSchema = createSelectSchema(calls);
 export const selectConversationSchema = createSelectSchema(conversations);
