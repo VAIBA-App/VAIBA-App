@@ -1,3 +1,4 @@
+import { Sidebar } from "@/components/layout/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { customerApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
@@ -9,18 +10,24 @@ export default function CustomerListPage() {
     queryFn: customerApi.getAll,
   });
 
-  if (isLoading) {
-    return <div>Lade Kundenliste...</div>;
-  }
-
-  if (error) {
-    return <div>Fehler beim Laden der Kundenliste: {error.message}</div>;
-  }
-
   return (
-    <div className="space-y-6">
-      <h1 className="text-4xl font-bold mb-8">Kundenliste</h1>
-      <CustomerList customers={customers || []} />
+    <div className="flex min-h-screen bg-background">
+      <Sidebar />
+      <main className="flex-1 p-8">
+        <h1 className="text-4xl font-bold mb-8">Kundenliste</h1>
+
+        {isLoading ? (
+          <div>Lade Kundenliste...</div>
+        ) : error ? (
+          <div className="text-red-500">
+            Fehler beim Laden der Kundenliste: {(error as Error).message}
+          </div>
+        ) : !customers ? (
+          <div>Keine Kunden gefunden.</div>
+        ) : (
+          <CustomerList customers={customers} />
+        )}
+      </main>
     </div>
   );
 }

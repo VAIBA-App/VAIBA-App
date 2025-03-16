@@ -44,9 +44,8 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
   });
 
   const updateProfileMutation = useMutation({
-    mutationFn: async (data: Omit<Profile, "id" | "createdAt" | "updatedAt">) => {
+    mutationFn: async (data: Partial<Profile>) => {
       try {
-        // Handle image upload if a file is selected
         let imageUrl = data.imageUrl;
         if (selectedImage) {
           const formData = new FormData();
@@ -65,7 +64,6 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
           imageUrl = uploadResult.url;
         }
 
-        // Update profile with image URL
         const response = await fetch(`/api/profiles/${profile.id}`, {
           method: 'PUT',
           headers: {
@@ -108,23 +106,6 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
     },
   });
 
-  const onSubmit = async (data: Profile) => {
-    setIsSubmitting(true);
-    try {
-      await updateProfileMutation.mutateAsync(data);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
-      form.setValue('imageUrl', file.name);
-    }
-  };
-
   const handleVoiceSettingsChange = (settings: {
     voiceId: string;
     stability: number;
@@ -143,7 +124,7 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-6 overflow-y-auto max-h-[calc(100vh-120px)] px-1">
+      <form onSubmit={form.handleSubmit((data) => updateProfileMutation.mutate(data))} className="space-y-4 mt-6">
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -320,8 +301,8 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
           <h3 className="text-lg font-medium">Stimme auswählen</h3>
           <VoiceSettings
             onSettingsChange={handleVoiceSettingsChange}
-            initialVoiceId={profile.voiceId}
-            initialSettings={profile.voiceSettings}
+            initialVoiceId={profile.voiceId || undefined}
+            initialSettings={profile.voiceSettings || undefined}
           />
         </div>
 

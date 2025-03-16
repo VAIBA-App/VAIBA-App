@@ -24,7 +24,11 @@ export function CustomerList({ customers }: CustomerListProps) {
   };
 
   const toggleAllCustomers = () => {
-    const allSelected = Object.keys(selectedCustomers).length === customers.length;
+    if (!customers) return;
+
+    const allSelected = customers.length > 0 && 
+      customers.every(customer => selectedCustomers[customer.id]);
+
     if (allSelected) {
       setSelectedCustomers({});
     } else {
@@ -51,12 +55,10 @@ export function CustomerList({ customers }: CustomerListProps) {
     }
 
     try {
-      // Delete customers one by one
       await Promise.all(selectedIds.map(id =>
         fetch(`/api/customers/${id}`, { method: 'DELETE' })
       ));
 
-      // Invalidate the customers query to refresh the list
       queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
 
       toast({
@@ -64,7 +66,6 @@ export function CustomerList({ customers }: CustomerListProps) {
         description: `${selectedIds.length} Kunden wurden erfolgreich gelöscht.`,
       });
 
-      // Reset selections
       setSelectedCustomers({});
     } catch (error) {
       console.error('Error deleting customers:', error);
@@ -76,13 +77,17 @@ export function CustomerList({ customers }: CustomerListProps) {
     }
   };
 
+  if (!Array.isArray(customers)) {
+    return <div>Keine Kunden verfügbar.</div>;
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Checkbox
             id="selectAll"
-            checked={Object.keys(selectedCustomers).length === customers.length}
+            checked={customers.length > 0 && customers.every(customer => selectedCustomers[customer.id])}
             onCheckedChange={toggleAllCustomers}
           />
           <label htmlFor="selectAll" className="text-sm font-medium">

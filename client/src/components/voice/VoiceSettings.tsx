@@ -15,18 +15,25 @@ interface VoiceSettingsProps {
     style: number;
     speed: number;
   }) => void;
+  initialVoiceId?: string;
+  initialSettings?: {
+    stability: number;
+    similarityBoost: number;
+    style: number;
+    speed: number;
+  };
 }
 
-export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
+export function VoiceSettings({ onSettingsChange, initialVoiceId, initialSettings }: VoiceSettingsProps) {
   const [voices, setVoices] = useState<Array<{ voice_id: string; name: string }>>([]);
-  const [selectedVoice, setSelectedVoice] = useState("21m00Tcm4TlvDq8ikWAM");
+  const [selectedVoice, setSelectedVoice] = useState(initialVoiceId || "");
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const [settings, setSettings] = useState({
-    stability: 0.5,
-    similarityBoost: 0.75,
-    style: 0.0,
-    speed: 1.0,
+    stability: initialSettings?.stability || 0.5,
+    similarityBoost: initialSettings?.similarityBoost || 0.75,
+    style: initialSettings?.style || 0,
+    speed: initialSettings?.speed || 1,
   });
 
   useEffect(() => {
@@ -34,10 +41,12 @@ export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
   }, []);
 
   useEffect(() => {
-    onSettingsChange({
-      voiceId: selectedVoice,
-      ...settings,
-    });
+    if (selectedVoice) {
+      onSettingsChange({
+        voiceId: selectedVoice,
+        ...settings,
+      });
+    }
   }, [selectedVoice, settings, onSettingsChange]);
 
   const loadVoices = async () => {
@@ -46,7 +55,6 @@ export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
       const availableVoices = await elevenLabsService.getVoices();
       if (availableVoices.length > 0) {
         setVoices(availableVoices);
-        // Setze die erste Stimme als Standard, wenn keine ausgewählt ist
         if (!selectedVoice && availableVoices[0]?.voice_id) {
           setSelectedVoice(availableVoices[0].voice_id);
         }
@@ -71,7 +79,7 @@ export function VoiceSettings({ onSettingsChange }: VoiceSettingsProps) {
   };
 
   return (
-    <Card>
+    <Card className="border rounded-lg">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Mic className="h-5 w-5" />

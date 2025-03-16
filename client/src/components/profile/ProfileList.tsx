@@ -7,20 +7,7 @@ import { Users, Check, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { EditProfileForm } from "./EditProfileForm";
-
-interface Profile {
-  id: number;
-  name: string;
-  gender: string;
-  age: number;
-  origin: string;
-  location: string;
-  education: string;
-  position: string;
-  company: string;
-  languages: string[];
-  imageUrl?: string;
-}
+import { Profile } from "@db/schema";
 
 export function ProfileList() {
   const [activeProfileId, setActiveProfileId] = useState<number | null>(null);
@@ -33,7 +20,7 @@ export function ProfileList() {
     queryFn: async () => {
       const response = await fetch('/api/profiles');
       if (!response.ok) throw new Error('Failed to fetch profiles');
-      return response.json();
+      return response.json() as Promise<Profile[]>;
     },
   });
 
@@ -114,7 +101,7 @@ export function ProfileList() {
           <div>Lade Profile...</div>
         ) : (
           <div className="grid gap-4">
-            {profiles?.map((profile: Profile) => (
+            {profiles?.map((profile) => (
               <div
                 key={profile.id}
                 className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted"
@@ -148,11 +135,11 @@ export function ProfileList() {
                     <Trash2 className="h-4 w-4" />
                   </Button>
                   <Button
-                    variant={activeProfileId === profile.id ? "default" : "outline"}
+                    variant={profile.isActive ? "default" : "outline"}
                     onClick={() => handleSetActiveProfile(profile.id)}
                     className="ml-4"
                   >
-                    {activeProfileId === profile.id ? (
+                    {profile.isActive ? (
                       <>
                         <Check className="mr-2 h-4 w-4" />
                         Aktiv

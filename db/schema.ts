@@ -30,6 +30,13 @@ export const profiles = pgTable("profiles", {
   company: text("company").notNull(),
   languages: text("languages").array().notNull(),
   imageUrl: text("image_url"),
+  voiceId: text("voice_id"),
+  voiceSettings: json("voice_settings").$type<{
+    stability: number;
+    similarityBoost: number;
+    style: number;
+    speed: number;
+  }>(),
   isActive: boolean("is_active").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
