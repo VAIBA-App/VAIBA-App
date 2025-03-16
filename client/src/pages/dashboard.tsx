@@ -30,7 +30,7 @@ export default function Dashboard() {
 
   // Initialize chat with personalized greeting
   const getInitialGreeting = () => {
-    const assistantName = assistantProfile?.name || "VAIBA";
+    const assistantName = assistantProfile?.name || "Maria Adams";
     return {
       role: 'assistant' as const,
       content: `Hallo! Ich bin ${assistantName}. Ich bin Ihr persönlicher VAIBA Assistent. Wie kann ich Ihnen heute helfen?`
