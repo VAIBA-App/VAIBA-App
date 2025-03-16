@@ -328,9 +328,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/assistant-profile", authenticateToken, async (req, res) => {
     try {
       const { name, profile_image } = req.body;
+      console.log('Updating assistant profile with:', { name, profile_image });
+
       let [profile] = await db.select().from(profiles).where(eq(profiles.isActive, true)).limit(1);
 
       if (profile) {
+        console.log('Updating existing profile:', profile.id);
         [profile] = await db
           .update(profiles)
           .set({
@@ -341,6 +344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .where(eq(profiles.id, profile.id))
           .returning();
       } else {
+        console.log('Creating new profile');
         [profile] = await db
           .insert(profiles)
           .values({
@@ -361,6 +365,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .returning();
       }
 
+      console.log('Profile updated successfully:', profile);
       res.json({
         id: profile.id,
         name: profile.name,
@@ -368,7 +373,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error updating assistant profile:', error);
-      res.status(500).json({ message: "Fehler beim Aktualisieren des Profils" });
+      res.status(500).json({ 
+        message: "Fehler beim Aktualisieren des Profils",
+        error: error instanceof Error ? error.message : 'Unbekannter Fehler'
+      });
     }
   });
 
