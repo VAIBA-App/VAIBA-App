@@ -33,18 +33,11 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
       company: profile.company,
       languages: profile.languages,
       imageUrl: profile.imageUrl || "",
-      voiceId: profile.voiceId || "",
-      voiceSettings: profile.voiceSettings || {
-        stability: 0.5,
-        similarityBoost: 0.75,
-        style: 0,
-        speed: 1,
-      },
     },
   });
 
   const updateProfileMutation = useMutation({
-    mutationFn: async (data: Partial<Profile>) => {
+    mutationFn: async (data: Profile) => {
       try {
         let imageUrl = data.imageUrl;
         if (selectedImage) {
@@ -72,15 +65,11 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
           body: JSON.stringify({
             ...data,
             imageUrl,
-            languages: Array.isArray(data.languages)
-              ? data.languages
-              : String(data.languages).split(',').map(lang => lang.trim()),
           }),
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to update profile');
+          throw new Error('Failed to update profile');
         }
 
         return response.json();
@@ -100,26 +89,18 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
       console.error('Profile update error:', error);
       toast({
         title: "Fehler",
-        description: error.message || "Das Profil konnte nicht aktualisiert werden.",
+        description: "Das Profil konnte nicht aktualisiert werden.",
         variant: "destructive",
       });
     },
   });
 
-  const handleVoiceSettingsChange = (settings: {
-    voiceId: string;
-    stability: number;
-    similarityBoost: number;
-    style: number;
-    speed: number;
-  }) => {
-    form.setValue('voiceId', settings.voiceId);
-    form.setValue('voiceSettings', {
-      stability: settings.stability,
-      similarityBoost: settings.similarityBoost,
-      style: settings.style,
-      speed: settings.speed,
-    });
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      form.setValue('imageUrl', URL.createObjectURL(file));
+    }
   };
 
   return (
@@ -295,16 +276,6 @@ export function EditProfileForm({ profile, onSuccess }: EditProfileFormProps) {
             </FormItem>
           )}
         />
-
-        {/* Voice Settings */}
-        <div className="space-y-4 border rounded-lg p-4">
-          <h3 className="text-lg font-medium">Stimme auswählen</h3>
-          <VoiceSettings
-            onSettingsChange={handleVoiceSettingsChange}
-            initialVoiceId={profile.voiceId || undefined}
-            initialSettings={profile.voiceSettings || undefined}
-          />
-        </div>
 
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? "Wird gespeichert..." : "Änderungen speichern"}

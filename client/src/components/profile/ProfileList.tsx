@@ -7,10 +7,9 @@ import { Users, Check, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { EditProfileForm } from "./EditProfileForm";
-import { Profile } from "@db/schema";
+import type { Profile } from "@db/schema";
 
 export function ProfileList() {
-  const [activeProfileId, setActiveProfileId] = useState<number | null>(null);
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -37,8 +36,7 @@ export function ProfileList() {
       if (!response.ok) throw new Error('Failed to set active profile');
       return response.json();
     },
-    onSuccess: (_, profileId) => {
-      setActiveProfileId(profileId);
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
       toast({
         title: "Aktives Profil gesetzt",
