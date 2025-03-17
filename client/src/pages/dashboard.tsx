@@ -24,7 +24,7 @@ export default function Dashboard() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
 
-  // Fetch assistant profile
+  // Fetch assistant profile with improved configuration
   const { data: activeProfile } = useQuery({
     queryKey: ['/api/profiles'],
     queryFn: async () => {
@@ -33,8 +33,11 @@ export default function Dashboard() {
         throw new Error('Failed to fetch profiles');
       }
       const profiles = await response.json();
-      return profiles.find((p: any) => p.isActive) || null;
+      return Array.isArray(profiles) ? profiles.find((p: any) => p.isActive) : null;
     },
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 0,
   });
 
   useEffect(() => {
@@ -47,7 +50,9 @@ export default function Dashboard() {
       };
     };
 
-    setMessages([getInitialGreeting()]);
+    if (activeProfile) {
+      setMessages([getInitialGreeting()]);
+    }
   }, [activeProfile]);
 
   const quickCommands = [
