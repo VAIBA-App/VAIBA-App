@@ -97,12 +97,15 @@ export default function AssistantPage() {
         throw new Error('Failed to activate profile');
       }
 
+      // Ungültige die Profil-Abfrage
+      await queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
+      // Sofortige Aktualisierung der Profilliste
+      await refetchProfiles();
+
       toast({
         title: "Profil aktiviert",
         description: "Das ausgewählte Profil wurde erfolgreich aktiviert.",
       });
-
-      await queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
     } catch (error) {
       toast({
         title: "Fehler",
@@ -140,7 +143,8 @@ export default function AssistantPage() {
         });
 
         setSelectedProfiles({});
-        refetchProfiles();
+        await queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
+        await refetchProfiles();
       } catch (error) {
         toast({
           title: "Fehler",
@@ -293,8 +297,9 @@ export default function AssistantPage() {
           <EditProfileForm
             profile={isCreatingNew ? emptyProfile : (activeProfile || emptyProfile)}
             isNewProfile={isCreatingNew}
-            onSuccess={() => {
-              refetchProfiles();
+            onSuccess={async () => {
+              await queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
+              await refetchProfiles();
               setIsCreatingNew(false);
             }}
           />
