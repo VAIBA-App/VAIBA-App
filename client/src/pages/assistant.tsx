@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, User, Plus, Check, Trash2, Mic } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { VoiceSettings } from "@/components/voice/VoiceSettings";
+import { useLocation } from "wouter";
 
 interface Profile {
   id: number;
@@ -40,6 +41,7 @@ export default function AssistantPage() {
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [selectedProfiles, setSelectedProfiles] = useState<Record<number, boolean>>({});
   const queryClient = useQueryClient();
+  const [_, setLocation] = useLocation();
 
   const { data: profiles = [], isLoading: isLoadingProfiles, refetch: refetchProfiles } = useQuery({
     queryKey: ['/api/profiles'],
@@ -97,15 +99,17 @@ export default function AssistantPage() {
         throw new Error('Failed to activate profile');
       }
 
-      // Ungültige die Profil-Abfrage
+      // Invalidate and refetch queries
       await queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
-      // Sofortige Aktualisierung der Profilliste
       await refetchProfiles();
 
       toast({
         title: "Profil aktiviert",
         description: "Das ausgewählte Profil wurde erfolgreich aktiviert.",
       });
+
+      // Force a navigation to refresh the page
+      setLocation('/assistant');
     } catch (error) {
       toast({
         title: "Fehler",
