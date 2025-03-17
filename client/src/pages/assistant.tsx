@@ -54,7 +54,11 @@ export default function AssistantPage() {
     }
   }, [isNavigating, setLocation]);
 
-  const { data: profiles = [], isLoading: isLoadingProfiles, refetch: refetchProfiles } = useQuery({
+  const { 
+    data: profiles = [], 
+    isLoading: isLoadingProfiles, 
+    refetch: refetchProfiles 
+  } = useQuery<Profile[]>({
     queryKey: ['/api/profiles'],
     queryFn: async () => {
       try {
@@ -63,18 +67,13 @@ export default function AssistantPage() {
           throw new Error('Failed to fetch profiles');
         }
         const data = await response.json();
-        // Ensure we always have an array
-        if (!Array.isArray(data)) {
-          console.warn('Profiles data is not an array:', data);
-          return [];
-        }
-        return data;
+        return Array.isArray(data) ? data : [];
       } catch (error) {
         console.error('Error fetching profiles:', error);
         return [];
       }
     },
-    initialData: [], // Ensure we always have an array
+    initialData: [] as Profile[],
   });
 
   const { data: voicesList = [] } = useQuery({
@@ -192,7 +191,7 @@ export default function AssistantPage() {
   };
 
   const toggleAllProfiles = () => {
-    if (!profiles || profiles.length === 0) return;
+    if (profiles.length === 0) return;
 
     const allSelected = profiles.every(profile => selectedProfiles[profile.id]);
     if (allSelected) {
@@ -206,34 +205,11 @@ export default function AssistantPage() {
     }
   };
 
-  const emptyProfile: Profile = {
-    id: 0,
-    name: "",
-    lastName: "",
-    gender: "",
-    age: 25,
-    origin: "",
-    location: "",
-    education: "",
-    position: "",
-    company: "",
-    languages: [],
-    imageUrl: "/default-avatar.png",
-    isActive: false,
-    voiceId: "",
-    voiceSettings: {
-      stability: 0.5,
-      similarityBoost: 0.75,
-      style: 0,
-      speed: 1,
-    },
-  };
-
   if (isLoadingProfiles) {
     return <div>Lade Profile...</div>;
   }
 
-  const activeProfile = Array.isArray(profiles) ? profiles.find(p => p.isActive) : null;
+  const activeProfile = profiles.find(p => p.isActive);
 
   return (
     <div className="space-y-6">
@@ -266,7 +242,7 @@ export default function AssistantPage() {
               />
               <span className="text-sm">Alle auswählen</span>
             </div>
-            {profiles.map((profile) => (
+            {Array.isArray(profiles) && profiles.map((profile) => (
               <div
                 key={profile.id}
                 className={`flex items-center justify-between p-4 border rounded-lg ${
@@ -349,6 +325,29 @@ export default function AssistantPage() {
     </div>
   );
 }
+
+const emptyProfile: Profile = {
+  id: 0,
+  name: "",
+  lastName: "",
+  gender: "",
+  age: 25,
+  origin: "",
+  location: "",
+  education: "",
+  position: "",
+  company: "",
+  languages: [],
+  imageUrl: "/default-avatar.png",
+  isActive: false,
+  voiceId: "",
+  voiceSettings: {
+    stability: 0.5,
+    similarityBoost: 0.75,
+    style: 0,
+    speed: 1,
+  },
+};
 
 interface EditProfileFormProps {
   profile: Profile;
@@ -614,7 +613,7 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
               <FormControl>
                 <Input
                   {...field}
-                  value={Array.isArray(field.value) ? field.value.join(', ') : field.value}
+                  value={Array.isArray(field.value) ? field.value.join(', ') : ''}
                   onChange={(e) => field.onChange(e.target.value.split(',').map(lang => lang.trim()))}
                 />
               </FormControl>
