@@ -88,7 +88,7 @@ export function Sidebar() {
           icon: TrendingUp,
         },
         {
-          title: "Rechnungen & Zahlungen",
+          title: "Rechnungen",
           href: "/company/invoices",
           icon: Receipt,
         },

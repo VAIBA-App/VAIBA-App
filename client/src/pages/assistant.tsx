@@ -58,6 +58,15 @@ const emptyProfile: Profile = {
   },
 };
 
+function getBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = error => reject(error);
+  });
+}
+
 export default function AssistantPage() {
   const { toast } = useToast();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -410,7 +419,6 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
   });
 
   useEffect(() => {
-    // Update form values when profile changes
     form.reset({
       ...profile,
       languages: Array.isArray(profile.languages) ? profile.languages : [],
@@ -423,38 +431,47 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
     });
   }, [profile, form]);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedImage(file);
-      form.setValue('imageUrl', URL.createObjectURL(file));
+      try {
+        const base64 = await getBase64(file);
+        setSelectedImage(file);
+        form.setValue('imageUrl', base64);
+      } catch (error) {
+        console.error('Error converting image to base64:', error);
+        toast({
+          title: "Fehler",
+          description: "Das Bild konnte nicht verarbeitet werden.",
+          variant: "destructive",
+        });
+      }
     }
-  };
-
-  const handleVoiceSettingsChange = (settings: {
-    voiceId: string;
-    stability: number;
-    similarityBoost: number;
-    style: number;
-    speed: number;
-  }) => {
-    form.setValue('voiceId', settings.voiceId);
-    form.setValue('voiceSettings', {
-      stability: settings.stability,
-      similarityBoost: settings.similarityBoost,
-      style: settings.style,
-      speed: settings.speed,
-    });
   };
 
   const onSubmit = async (data: Profile) => {
     try {
-      let response;
+      let imageUrl = data.imageUrl;
+
+      if (selectedImage) {
+        try {
+          imageUrl = await getBase64(selectedImage);
+        } catch (error) {
+          console.error('Error converting image to base64:', error);
+          toast({
+            title: "Fehler",
+            description: "Das Bild konnte nicht verarbeitet werden.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
       if (isNewProfile) {
         const existingProfiles = await fetch('/api/profiles').then(res => res.json());
         const isFirstProfile = !existingProfiles || existingProfiles.length === 0;
 
-        response = await fetch('/api/profiles', {
+        const response = await fetch('/api/profiles', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -463,15 +480,19 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
             ...data,
             name: data.name.trim(),
             lastName: data.lastName?.trim(),
-            imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : data.imageUrl,
+            imageUrl,
             languages: Array.isArray(data.languages)
               ? data.languages
               : (data.languages || '').toString().split(',').map(lang => lang.trim()),
             isActive: isFirstProfile,
           }),
         });
+
+        if (!response.ok) {
+          throw new Error('Fehler beim Erstellen des Profils');
+        }
       } else {
-        response = await fetch(`/api/profiles/${profile.id}`, {
+        const response = await fetch(`/api/profiles/${profile.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -480,16 +501,16 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
             ...data,
             name: data.name.trim(),
             lastName: data.lastName?.trim(),
-            imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : data.imageUrl,
+            imageUrl,
             languages: Array.isArray(data.languages)
               ? data.languages
               : (data.languages || '').toString().split(',').map(lang => lang.trim()),
           }),
         });
-      }
 
-      if (!response.ok) {
-        throw new Error(isNewProfile ? 'Fehler beim Erstellen des Profils' : 'Fehler beim Aktualisieren des Profils');
+        if (!response.ok) {
+          throw new Error('Fehler beim Aktualisieren des Profils');
+        }
       }
 
       onSuccess();
@@ -508,7 +529,7 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
         <div className="flex flex-col items-center space-y-4">
           <Avatar className="w-32 h-32">
             <AvatarImage
-              src={selectedImage ? URL.createObjectURL(selectedImage) : profile.imageUrl}
+              src={form.watch('imageUrl') || profile.imageUrl}
               alt="Profilbild"
             />
             <AvatarFallback>
