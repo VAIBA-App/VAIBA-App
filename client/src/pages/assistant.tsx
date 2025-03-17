@@ -449,6 +449,22 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
     }
   };
 
+  const handleVoiceSettingsChange = (settings: {
+    voiceId: string;
+    stability: number;
+    similarityBoost: number;
+    style: number;
+    speed: number;
+  }) => {
+    form.setValue('voiceId', settings.voiceId);
+    form.setValue('voiceSettings', {
+      stability: settings.stability,
+      similarityBoost: settings.similarityBoost,
+      style: settings.style,
+      speed: settings.speed,
+    });
+  };
+
   const onSubmit = async (data: Profile) => {
     try {
       let imageUrl = data.imageUrl;
