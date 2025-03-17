@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +64,7 @@ export default function AssistantPage() {
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [selectedProfiles, setSelectedProfiles] = useState<Record<number, boolean>>({});
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
+  const editFormRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const [_, setLocation] = useLocation();
   const [isNavigating, setIsNavigating] = useState(false);
@@ -245,6 +246,10 @@ export default function AssistantPage() {
   const handleEditProfile = (profile: Profile) => {
     setIsCreatingNew(false);
     setSelectedProfile(profile);
+    // Scroll to edit form
+    setTimeout(() => {
+      editFormRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
   };
 
   return (
@@ -338,23 +343,31 @@ export default function AssistantPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{isCreatingNew ? "Neues Profil erstellen" : "Profil bearbeiten"}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <EditProfileForm
-            profile={isCreatingNew ? emptyProfile : (selectedProfile || emptyProfile)}
-            isNewProfile={isCreatingNew}
-            onSuccess={async () => {
-              await queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
-              await refetchProfiles();
-              setIsCreatingNew(false);
-              setSelectedProfile(null);
-            }}
-          />
-        </CardContent>
-      </Card>
+      <div ref={editFormRef}>
+        <Card>
+          <CardHeader>
+            <CardTitle>{isCreatingNew ? "Neues Profil erstellen" : "Profil bearbeiten"}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <EditProfileForm
+              profile={isCreatingNew ? emptyProfile : (selectedProfile || emptyProfile)}
+              isNewProfile={isCreatingNew}
+              onSuccess={async () => {
+                await queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
+                await refetchProfiles();
+                setIsCreatingNew(false);
+                setSelectedProfile(null);
+                toast({
+                  title: isCreatingNew ? "Profil erstellt" : "Profil aktualisiert",
+                  description: isCreatingNew 
+                    ? "Das neue Profil wurde erfolgreich erstellt."
+                    : "Das Profil wurde erfolgreich aktualisiert.",
+                });
+              }}
+            />
+          </CardContent>
+        </Card>
+      </div>
 
       {!isCreatingNew && !selectedProfile && (
         <div className="flex justify-end">
