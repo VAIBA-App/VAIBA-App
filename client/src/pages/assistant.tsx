@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, User, Plus, Check, Trash2, Mic } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { VoiceSettings } from "@/components/voice/VoiceSettings";
 
 interface Profile {
@@ -39,6 +39,7 @@ export default function AssistantPage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [selectedProfiles, setSelectedProfiles] = useState<Record<number, boolean>>({});
+  const queryClient = useQueryClient();
 
   const { data: profiles = [], isLoading: isLoadingProfiles, refetch: refetchProfiles } = useQuery({
     queryKey: ['/api/profiles'],
@@ -52,20 +53,27 @@ export default function AssistantPage() {
     },
   });
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
-      toast({
-        title: "Bild hochgeladen",
-        description: "Das Profilbild wurde hochgeladen. Speichern Sie das Profil, um die Änderungen zu übernehmen.",
+  const { data: voicesList = [] } = useQuery({
+    queryKey: ['voices'],
+    queryFn: async () => {
+      const response = await fetch('https://api.elevenlabs.io/v1/voices', {
+        headers: {
+          'xi-api-key': import.meta.env.VITE_ELEVENLABS_API_KEY,
+        },
       });
-    }
+      if (!response.ok) return [];
+      const data = await response.json();
+      return data.voices || [];
+    },
+  });
+
+  const getVoiceName = (voiceId: string) => {
+    const voice = voicesList.find(v => v.voice_id === voiceId);
+    return voice ? voice.name : '';
   };
 
   const activateProfile = async (profileId: number) => {
     try {
-      // Deaktiviere zuerst alle Profile
       const deactivateResponse = await fetch('/api/profiles/deactivate-all', {
         method: 'POST',
         headers: {
@@ -77,7 +85,6 @@ export default function AssistantPage() {
         throw new Error('Failed to deactivate profiles');
       }
 
-      // Aktiviere dann das ausgewählte Profil
       const response = await fetch('/api/profiles/active', {
         method: 'POST',
         headers: {
@@ -95,8 +102,7 @@ export default function AssistantPage() {
         description: "Das ausgewählte Profil wurde erfolgreich aktiviert.",
       });
 
-      // Reload the page after successful activation
-      window.location.reload();
+      await queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
     } catch (error) {
       toast({
         title: "Fehler",
@@ -194,14 +200,12 @@ export default function AssistantPage() {
     return <div>Lade Profile...</div>;
   }
 
-  // Find active profile
   const activeProfile = profiles.find(p => p.isActive);
 
   return (
     <div className="space-y-6">
       <h1 className="text-4xl font-bold">Assistent anpassen</h1>
 
-      {/* Profile List */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -252,7 +256,7 @@ export default function AssistantPage() {
                       {profile.voiceId && (
                         <div className="flex items-center text-sm text-muted-foreground">
                           <Mic className="h-4 w-4 mr-1" />
-                          <span>Stimme ausgewählt</span>
+                          <span>Stimme ausgewählt: {getVoiceName(profile.voiceId)}</span>
                         </div>
                       )}
                     </div>
@@ -281,7 +285,6 @@ export default function AssistantPage() {
         </CardContent>
       </Card>
 
-      {/* Edit Profile Form */}
       <Card>
         <CardHeader>
           <CardTitle>{isCreatingNew ? "Neues Profil erstellen" : "Profil bearbeiten"}</CardTitle>
@@ -298,7 +301,6 @@ export default function AssistantPage() {
         </CardContent>
       </Card>
 
-      {/* Create New Profile Button */}
       {!isCreatingNew && (
         <div className="flex justify-end">
           <Button
@@ -355,7 +357,6 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
     try {
       let response;
       if (isNewProfile) {
-        // Check if this is the first profile being created
         const existingProfiles = await fetch('/api/profiles').then(res => res.json());
         const isFirstProfile = !existingProfiles || existingProfiles.length === 0;
 
@@ -372,7 +373,7 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
             languages: Array.isArray(data.languages)
               ? data.languages
               : data.languages.toString().split(',').map(lang => lang.trim()),
-            isActive: isFirstProfile, // Set active only if it's the first profile
+            isActive: isFirstProfile,
           }),
         });
       } else {
@@ -577,8 +578,8 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
             <FormItem>
               <FormLabel>Sprachen (kommagetrennt)</FormLabel>
               <FormControl>
-                <Input 
-                  {...field} 
+                <Input
+                  {...field}
                   value={Array.isArray(field.value) ? field.value.join(', ') : field.value}
                   onChange={(e) => field.onChange(e.target.value.split(',').map(lang => lang.trim()))}
                 />
