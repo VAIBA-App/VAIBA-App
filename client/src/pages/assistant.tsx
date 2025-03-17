@@ -63,12 +63,18 @@ export default function AssistantPage() {
           throw new Error('Failed to fetch profiles');
         }
         const data = await response.json();
-        return Array.isArray(data) ? data : [];
+        // Ensure we always have an array
+        if (!Array.isArray(data)) {
+          console.warn('Profiles data is not an array:', data);
+          return [];
+        }
+        return data;
       } catch (error) {
         console.error('Error fetching profiles:', error);
         return [];
       }
     },
+    initialData: [], // Ensure we always have an array
   });
 
   const { data: voicesList = [] } = useQuery({
