@@ -412,6 +412,7 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const form = useForm<Profile>({
     defaultValues: {
+      id: profile.id, // Explicitly include the ID
       ...profile,
       languages: Array.isArray(profile.languages) ? profile.languages : [],
       voiceSettings: profile.voiceSettings || {
@@ -425,6 +426,7 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
 
   useEffect(() => {
     form.reset({
+      id: profile.id, // Explicitly include the ID
       ...profile,
       languages: Array.isArray(profile.languages) ? profile.languages : [],
       voiceSettings: profile.voiceSettings || {
@@ -481,7 +483,7 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
           console.error('Error converting image to base64:', error);
           toast({
             title: "Fehler",
-            description: "Das Bild konnte nicht verarbeitet werden.",
+            description: error instanceof Error ? error.message : "Das Bild konnte nicht verarbeitet werden.",
             variant: "destructive",
           });
           return;
@@ -513,13 +515,9 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
           throw new Error('Fehler beim Erstellen des Profils');
         }
       } else {
-        // Ensure we have a valid profile ID
-        if (!profile.id) {
-          throw new Error('Ungültige Profil-ID');
-        }
-
         const updateData = {
           ...data,
+          id: profile.id, // Explicitly include the ID
           name: data.name.trim(),
           lastName: data.lastName?.trim(),
           imageUrl,
