@@ -4,6 +4,7 @@ import { db } from "@db";
 import { profiles, users, customers } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { generateChatResponse } from "./lib/openai";
 
 // Profile validation schema
 const insertProfileSchema = z.object({
@@ -397,7 +398,8 @@ const loginSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters")
 });
 
-async function generateChatResponse(message: string, userId: number): Promise<string> {
-  //Implementation for chat response generation. This is a placeholder.
-  return "placeholder response";
-}
+//This function is now imported from ./lib/openai
+// async function generateChatResponse(message: string, userId: number): Promise<string> {
+//   //Implementation for chat response generation. This is a placeholder.
+//   return "placeholder response";
+// }
