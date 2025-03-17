@@ -60,6 +60,11 @@ const emptyProfile: Profile = {
 
 function getBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
+    // Check file size (1MB = 1024 * 1024 bytes)
+    if (file.size > 1024 * 1024) {
+      reject(new Error('Das Bild darf maximal 1MB groß sein'));
+      return;
+    }
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => resolve(reader.result as string);
@@ -442,7 +447,7 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
         console.error('Error converting image to base64:', error);
         toast({
           title: "Fehler",
-          description: "Das Bild konnte nicht verarbeitet werden.",
+          description: error instanceof Error ? error.message : "Das Bild konnte nicht verarbeitet werden.",
           variant: "destructive",
         });
       }
@@ -570,7 +575,7 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
               <User className="w-16 h-16 text-muted-foreground" />
             </AvatarFallback>
           </Avatar>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col items-center gap-2">
             <Input
               type="file"
               accept="image/*"
@@ -586,6 +591,9 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
                 </span>
               </Button>
             </label>
+            <p className="text-sm text-muted-foreground">
+              Maximale Bildgröße: 1MB. Empfohlene Auflösung: 256x256 Pixel.
+            </p>
           </div>
         </div>
 
