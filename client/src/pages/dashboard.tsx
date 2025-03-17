@@ -121,7 +121,7 @@ export default function Dashboard() {
           </Card>
 
           {/* Chat Card */}
-          <Card className="h-[calc(50vh-2rem)]">
+          <Card className="h-[400px] mb-6">
             <CardHeader>
               <CardTitle>Assistent {activeProfile?.name || ""}</CardTitle>
             </CardHeader>
