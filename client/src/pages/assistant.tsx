@@ -35,6 +35,29 @@ interface Profile {
   };
 }
 
+const emptyProfile: Profile = {
+  id: 0,
+  name: "",
+  lastName: "",
+  gender: "",
+  age: 25,
+  origin: "",
+  location: "",
+  education: "",
+  position: "",
+  company: "",
+  languages: [],
+  imageUrl: "/default-avatar.png",
+  isActive: false,
+  voiceId: "",
+  voiceSettings: {
+    stability: 0.5,
+    similarityBoost: 0.75,
+    style: 0,
+    speed: 1,
+  },
+};
+
 export default function AssistantPage() {
   const { toast } = useToast();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -54,11 +77,7 @@ export default function AssistantPage() {
     }
   }, [isNavigating, setLocation]);
 
-  const { 
-    data: profiles = [], 
-    isLoading: isLoadingProfiles, 
-    refetch: refetchProfiles 
-  } = useQuery<Profile[]>({
+  const { data, isLoading: isLoadingProfiles, refetch: refetchProfiles } = useQuery<Profile[]>({
     queryKey: ['/api/profiles'],
     queryFn: async () => {
       try {
@@ -75,6 +94,9 @@ export default function AssistantPage() {
     },
     initialData: [] as Profile[],
   });
+
+  // Ensure profiles is always an array
+  const profiles = Array.isArray(data) ? data : [];
 
   const { data: voicesList = [] } = useQuery({
     queryKey: ['voices'],
@@ -96,7 +118,7 @@ export default function AssistantPage() {
   });
 
   const getVoiceName = (voiceId: string) => {
-    const voice = voicesList.find((v: any) => v.voice_id === voiceId);
+    const voice = Array.isArray(voicesList) ? voicesList.find((v: any) => v.voice_id === voiceId) : null;
     return voice ? voice.name : '';
   };
 
@@ -242,7 +264,7 @@ export default function AssistantPage() {
               />
               <span className="text-sm">Alle auswählen</span>
             </div>
-            {Array.isArray(profiles) && profiles.map((profile) => (
+            {profiles.map((profile) => (
               <div
                 key={profile.id}
                 className={`flex items-center justify-between p-4 border rounded-lg ${
@@ -326,29 +348,6 @@ export default function AssistantPage() {
   );
 }
 
-const emptyProfile: Profile = {
-  id: 0,
-  name: "",
-  lastName: "",
-  gender: "",
-  age: 25,
-  origin: "",
-  location: "",
-  education: "",
-  position: "",
-  company: "",
-  languages: [],
-  imageUrl: "/default-avatar.png",
-  isActive: false,
-  voiceId: "",
-  voiceSettings: {
-    stability: 0.5,
-    similarityBoost: 0.75,
-    style: 0,
-    speed: 1,
-  },
-};
-
 interface EditProfileFormProps {
   profile: Profile;
   isNewProfile: boolean;
@@ -405,7 +404,7 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
             imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : data.imageUrl,
             languages: Array.isArray(data.languages)
               ? data.languages
-              : data.languages.toString().split(',').map(lang => lang.trim()),
+              : (data.languages || '').toString().split(',').map(lang => lang.trim()),
             isActive: isFirstProfile,
           }),
         });
@@ -422,7 +421,7 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
             imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : data.imageUrl,
             languages: Array.isArray(data.languages)
               ? data.languages
-              : data.languages.toString().split(',').map(lang => lang.trim()),
+              : (data.languages || '').toString().split(',').map(lang => lang.trim()),
           }),
         });
       }
