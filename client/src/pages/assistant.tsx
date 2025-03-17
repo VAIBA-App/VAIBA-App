@@ -7,7 +7,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, User, Plus, Check, Trash2 } from "lucide-react";
+import { Upload, User, Plus, Check, Trash2, Mic } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { VoiceSettings } from "@/components/voice/VoiceSettings";
 
@@ -65,6 +65,19 @@ export default function AssistantPage() {
 
   const activateProfile = async (profileId: number) => {
     try {
+      // Deaktiviere zuerst alle Profile
+      const deactivateResponse = await fetch('/api/profiles/deactivate-all', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!deactivateResponse.ok) {
+        throw new Error('Failed to deactivate profiles');
+      }
+
+      // Aktiviere dann das ausgewählte Profil
       const response = await fetch('/api/profiles/active', {
         method: 'POST',
         headers: {
@@ -76,8 +89,6 @@ export default function AssistantPage() {
       if (!response.ok) {
         throw new Error('Failed to activate profile');
       }
-
-      await refetchProfiles();
 
       toast({
         title: "Profil aktiviert",
@@ -232,11 +243,19 @@ export default function AssistantPage() {
                     onChange={() => toggleProfileSelection(profile.id)}
                     className="w-4 h-4"
                   />
-                  <div>
-                    <p className="font-medium">
-                      {profile.name}
-                      {profile.lastName ? ` ${profile.lastName}` : ''}
-                    </p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">
+                        {profile.name}
+                        {profile.lastName ? ` ${profile.lastName}` : ''}
+                      </p>
+                      {profile.voiceId && (
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Mic className="h-4 w-4 mr-1" />
+                          <span>Stimme ausgewählt</span>
+                        </div>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">
                       {profile.position} bei {profile.company}
                     </p>
@@ -336,6 +355,10 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
     try {
       let response;
       if (isNewProfile) {
+        // Check if this is the first profile being created
+        const existingProfiles = await fetch('/api/profiles').then(res => res.json());
+        const isFirstProfile = !existingProfiles || existingProfiles.length === 0;
+
         response = await fetch('/api/profiles', {
           method: 'POST',
           headers: {
@@ -349,6 +372,7 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
             languages: Array.isArray(data.languages)
               ? data.languages
               : data.languages.toString().split(',').map(lang => lang.trim()),
+            isActive: isFirstProfile, // Set active only if it's the first profile
           }),
         });
       } else {
@@ -563,7 +587,6 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
           )}
         />
 
-        {/* Voice Settings */}
         <div className="space-y-4 border rounded-lg p-4">
           <h3 className="text-lg font-medium">Stimme auswählen</h3>
           <VoiceSettings

@@ -8,6 +8,7 @@ import { z } from "zod";
 // Profile validation schema
 const insertProfileSchema = z.object({
   name: z.string().min(1, "Name is required"),
+  lastName: z.string().optional(),
   gender: z.string(),
   age: z.number().min(18).max(100),
   origin: z.string(),
@@ -17,17 +18,29 @@ const insertProfileSchema = z.object({
   company: z.string(),
   languages: z.array(z.string()),
   imageUrl: z.string().optional(),
+  voiceId: z.string().optional(),
+  voiceSettings: z.object({
+    stability: z.number(),
+    similarityBoost: z.number(),
+    style: z.number(),
+    speed: z.number(),
+  }).optional(),
   isActive: z.boolean().optional(),
-});
-
-// Login validation schema
-const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters")
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
   console.log('Starting route registration...');
+
+  // Deactivate all profiles route
+  app.post("/api/profiles/deactivate-all", async (_req, res) => {
+    try {
+      await db.update(profiles).set({ isActive: false });
+      res.status(200).json({ message: "All profiles deactivated" });
+    } catch (error) {
+      console.error('Error deactivating profiles:', error);
+      res.status(500).json({ message: "Error deactivating profiles" });
+    }
+  });
 
   // Login route
   app.post("/api/auth/login", async (req, res) => {
@@ -86,10 +99,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // If this is the first profile, make it active
+      const existingProfiles = await db.select().from(profiles);
+      const isFirstProfile = existingProfiles.length === 0;
+
       const [profile] = await db
         .insert(profiles)
         .values({
           ...result.data,
+          isActive: isFirstProfile, // Only set active if it's the first profile
           createdAt: new Date(),
           updatedAt: new Date(),
         })
@@ -142,8 +160,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Profile ID is required" });
       }
 
+      // First deactivate all profiles
       await db.update(profiles).set({ isActive: false });
 
+      // Then activate the selected profile
       const [updatedProfile] = await db
         .update(profiles)
         .set({ isActive: true })
@@ -372,3 +392,12 @@ const insertCustomerSchema = z.object({});
 const insertCallSchema = z.object({});
 
 const calls = {}; // Placeholder - needs actual schema import
+const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters")
+});
+
+async function generateChatResponse(message: string, userId: number): Promise<string> {
+  //Implementation for chat response generation. This is a placeholder.
+  return "placeholder response";
+}
