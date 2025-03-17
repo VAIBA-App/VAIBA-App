@@ -359,7 +359,7 @@ export default function AssistantPage() {
                 setSelectedProfile(null);
                 toast({
                   title: isCreatingNew ? "Profil erstellt" : "Profil aktualisiert",
-                  description: isCreatingNew 
+                  description: isCreatingNew
                     ? "Das neue Profil wurde erfolgreich erstellt."
                     : "Das Profil wurde erfolgreich aktualisiert.",
                 });
@@ -397,8 +397,31 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
   const { toast } = useToast();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const form = useForm<Profile>({
-    defaultValues: profile
+    defaultValues: {
+      ...profile,
+      languages: Array.isArray(profile.languages) ? profile.languages : [],
+      voiceSettings: profile.voiceSettings || {
+        stability: 0.5,
+        similarityBoost: 0.75,
+        style: 0,
+        speed: 1,
+      }
+    }
   });
+
+  useEffect(() => {
+    // Update form values when profile changes
+    form.reset({
+      ...profile,
+      languages: Array.isArray(profile.languages) ? profile.languages : [],
+      voiceSettings: profile.voiceSettings || {
+        stability: 0.5,
+        similarityBoost: 0.75,
+        style: 0,
+        speed: 1,
+      }
+    });
+  }, [profile, form]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -468,11 +491,6 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
       if (!response.ok) {
         throw new Error(isNewProfile ? 'Fehler beim Erstellen des Profils' : 'Fehler beim Aktualisieren des Profils');
       }
-
-      toast({
-        title: isNewProfile ? "Profil erstellt" : "Profil aktualisiert",
-        description: isNewProfile ? "Das neue Profil wurde erfolgreich erstellt." : "Die Änderungen wurden erfolgreich gespeichert.",
-      });
 
       onSuccess();
     } catch (error) {
