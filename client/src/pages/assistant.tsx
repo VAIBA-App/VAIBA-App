@@ -63,6 +63,7 @@ export default function AssistantPage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [selectedProfiles, setSelectedProfiles] = useState<Record<number, boolean>>({});
+  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const queryClient = useQueryClient();
   const [_, setLocation] = useLocation();
   const [isNavigating, setIsNavigating] = useState(false);
@@ -241,7 +242,10 @@ export default function AssistantPage() {
     return <div>Lade Profile...</div>;
   }
 
-  const activeProfile = profiles.find(p => p.isActive);
+  const handleEditProfile = (profile: Profile) => {
+    setIsCreatingNew(false);
+    setSelectedProfile(profile);
+  };
 
   return (
     <div className="space-y-6">
@@ -306,20 +310,28 @@ export default function AssistantPage() {
                     </p>
                   </div>
                 </div>
-                <Button
-                  onClick={() => activateProfile(profile.id)}
-                  variant={profile.isActive ? "secondary" : "outline"}
-                  disabled={profile.isActive}
-                >
-                  {profile.isActive ? (
-                    <>
-                      <Check className="w-4 h-4 mr-2" />
-                      Aktiv
-                    </>
-                  ) : (
-                    "Aktivieren"
-                  )}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => handleEditProfile(profile)}
+                    variant="outline"
+                  >
+                    Bearbeiten
+                  </Button>
+                  <Button
+                    onClick={() => activateProfile(profile.id)}
+                    variant={profile.isActive ? "secondary" : "outline"}
+                    disabled={profile.isActive}
+                  >
+                    {profile.isActive ? (
+                      <>
+                        <Check className="w-4 h-4 mr-2" />
+                        Aktiv
+                      </>
+                    ) : (
+                      "Aktivieren"
+                    )}
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -332,21 +344,25 @@ export default function AssistantPage() {
         </CardHeader>
         <CardContent>
           <EditProfileForm
-            profile={isCreatingNew ? emptyProfile : (activeProfile || emptyProfile)}
+            profile={isCreatingNew ? emptyProfile : (selectedProfile || emptyProfile)}
             isNewProfile={isCreatingNew}
             onSuccess={async () => {
               await queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
               await refetchProfiles();
               setIsCreatingNew(false);
+              setSelectedProfile(null);
             }}
           />
         </CardContent>
       </Card>
 
-      {!isCreatingNew && (
+      {!isCreatingNew && !selectedProfile && (
         <div className="flex justify-end">
           <Button
-            onClick={() => setIsCreatingNew(true)}
+            onClick={() => {
+              setIsCreatingNew(true);
+              setSelectedProfile(null);
+            }}
             variant="outline"
           >
             <Plus className="w-4 h-4 mr-2" />
