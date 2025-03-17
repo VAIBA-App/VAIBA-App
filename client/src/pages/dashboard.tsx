@@ -121,12 +121,12 @@ export default function Dashboard() {
           </Card>
 
           {/* Chat Card */}
-          <Card className="h-[400px] mb-6">
+          <Card className="h-[500px] mb-8">
             <CardHeader>
               <CardTitle>Assistent {activeProfile?.name || ""}</CardTitle>
             </CardHeader>
-            <CardContent className="h-full flex flex-col">
-              <ScrollArea className="flex-1 pr-4">
+            <CardContent className="h-[calc(100%-4rem)] flex flex-col">
+              <ScrollArea className="flex-1 pr-4 mb-4">
                 <div className="space-y-4">
                   {messages.map((message, index) => (
                     <div
@@ -156,7 +156,7 @@ export default function Dashboard() {
                 </div>
               </ScrollArea>
 
-              <div className="border-t pt-4 mt-4">
+              <div className="border-t pt-4">
                 <div className="flex gap-2">
                   <Input
                     placeholder="Schreiben Sie eine Nachricht..."

@@ -62,6 +62,7 @@ export default function AssistantPage() {
         throw new Error('Failed to fetch profiles');
       }
       const data = await response.json();
+      // Ensure we always return an array
       return Array.isArray(data) ? data : [];
     },
   });
@@ -219,7 +220,8 @@ export default function AssistantPage() {
     return <div>Lade Profile...</div>;
   }
 
-  const activeProfile = profiles.find(p => p.isActive);
+  // Find active profile - ensure profiles is an array before using find
+  const activeProfile = Array.isArray(profiles) ? profiles.find(p => p.isActive) : null;
 
   return (
     <div className="space-y-6">
