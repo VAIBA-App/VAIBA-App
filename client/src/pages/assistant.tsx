@@ -57,32 +57,41 @@ export default function AssistantPage() {
   const { data: profiles = [], isLoading: isLoadingProfiles, refetch: refetchProfiles } = useQuery({
     queryKey: ['/api/profiles'],
     queryFn: async () => {
-      const response = await fetch('/api/profiles');
-      if (!response.ok) {
-        throw new Error('Failed to fetch profiles');
+      try {
+        const response = await fetch('/api/profiles');
+        if (!response.ok) {
+          throw new Error('Failed to fetch profiles');
+        }
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error('Error fetching profiles:', error);
+        return [];
       }
-      const data = await response.json();
-      // Ensure we always return an array
-      return Array.isArray(data) ? data : [];
     },
   });
 
   const { data: voicesList = [] } = useQuery({
     queryKey: ['voices'],
     queryFn: async () => {
-      const response = await fetch('https://api.elevenlabs.io/v1/voices', {
-        headers: {
-          'xi-api-key': import.meta.env.VITE_ELEVENLABS_API_KEY,
-        },
-      });
-      if (!response.ok) return [];
-      const data = await response.json();
-      return data.voices || [];
+      try {
+        const response = await fetch('https://api.elevenlabs.io/v1/voices', {
+          headers: {
+            'xi-api-key': import.meta.env.VITE_ELEVENLABS_API_KEY,
+          },
+        });
+        if (!response.ok) return [];
+        const data = await response.json();
+        return data.voices || [];
+      } catch (error) {
+        console.error('Error fetching voices:', error);
+        return [];
+      }
     },
   });
 
   const getVoiceName = (voiceId: string) => {
-    const voice = voicesList.find(v => v.voice_id === voiceId);
+    const voice = voicesList.find((v: any) => v.voice_id === voiceId);
     return voice ? voice.name : '';
   };
 
@@ -111,7 +120,6 @@ export default function AssistantPage() {
         throw new Error('Failed to activate profile');
       }
 
-      // Invalidate queries
       await queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
 
       toast({
@@ -119,7 +127,6 @@ export default function AssistantPage() {
         description: "Das ausgewählte Profil wurde erfolgreich aktiviert.",
       });
 
-      // Force reload by navigating away and back
       setLocation('/');
       setIsNavigating(true);
     } catch (error) {
@@ -220,7 +227,6 @@ export default function AssistantPage() {
     return <div>Lade Profile...</div>;
   }
 
-  // Find active profile - ensure profiles is an array before using find
   const activeProfile = Array.isArray(profiles) ? profiles.find(p => p.isActive) : null;
 
   return (
