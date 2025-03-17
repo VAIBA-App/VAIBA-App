@@ -9,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send, RefreshCw, BarChart2, Megaphone, User, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { chatApi, assistantProfileApi } from "@/lib/api";
+import { chatApi } from "@/lib/api";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
@@ -23,14 +23,21 @@ export default function Dashboard() {
   const { toast } = useToast();
 
   // Fetch assistant profile
-  const { data: assistantProfile } = useQuery({
-    queryKey: ['/api/assistant-profile'],
-    queryFn: assistantProfileApi.get,
+  const { data: activeProfile } = useQuery({
+    queryKey: ['/api/profiles'],
+    queryFn: async () => {
+      const response = await fetch('/api/profiles');
+      if (!response.ok) {
+        throw new Error('Failed to fetch profiles');
+      }
+      const profiles = await response.json();
+      return profiles.find((p: any) => p.isActive) || null;
+    },
   });
 
   // Initialize chat with personalized greeting
   const getInitialGreeting = () => {
-    const assistantName = assistantProfile?.name || "Maria Adams";
+    const assistantName = activeProfile ? `${activeProfile.name}${activeProfile.lastName ? ` ${activeProfile.lastName}` : ''}` : "Maria Adams";
     return {
       role: 'assistant' as const,
       content: `Hallo! Ich bin ${assistantName}. Ich bin Ihr persönlicher VAIBA Assistent. Wie kann ich Ihnen heute helfen?`
@@ -87,6 +94,7 @@ export default function Dashboard() {
     <div className="space-y-8">
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1 space-y-6">
+          {/* AI Assistant Card */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -97,45 +105,25 @@ export default function Dashboard() {
             <CardContent className="flex flex-col items-center space-y-2">
               <Avatar className="w-24 h-24">
                 <AvatarImage 
-                  src={assistantProfile?.profile_image || "/default-avatar.png"} 
-                  alt={assistantProfile?.name || "VAIBA"} 
+                  src={activeProfile?.imageUrl || "/default-avatar.png"} 
+                  alt={activeProfile?.name || "VAIBA"} 
                 />
                 <AvatarFallback>
                   <User className="w-12 h-12 text-muted-foreground" />
                 </AvatarFallback>
               </Avatar>
               <div className="text-center">
-                <h3 className="font-semibold text-lg">{assistantProfile?.name || "VAIBA"}</h3>
+                <h3 className="font-semibold text-lg">
+                  {activeProfile ? `${activeProfile.name}${activeProfile.lastName ? ` ${activeProfile.lastName}` : ''}` : "VAIBA"}
+                </h3>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Schnellbefehle</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {quickCommands.map((command, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => setInput(command.label)}
-                  >
-                    {command.icon}
-                    <span className="ml-2">{command.label}</span>
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="lg:col-span-3">
+          {/* Chat Card */}
           <Card className="h-[calc(50vh-2rem)]">
             <CardHeader>
-              <CardTitle>Chat mit {assistantProfile?.name || "VAIBA"}</CardTitle>
+              <CardTitle>Assistent {activeProfile?.name || ""}</CardTitle>
             </CardHeader>
             <CardContent className="h-full flex flex-col">
               <ScrollArea className="flex-1 pr-4">
@@ -190,33 +178,57 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Quick Commands Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Schnellbefehle</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {quickCommands.map((command, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => setInput(command.label)}
+                  >
+                    {command.icon}
+                    <span className="ml-2">{command.label}</span>
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="lg:col-span-3">
+          <div className="grid gap-8">
+            <StatsCards stats={stats} />
+            <NetworkStatus />
+          </div>
+
+          <Card className="p-6 mt-8">
+            <h2 className="text-2xl font-semibold mb-4">Call Volume Trend</h2>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line 
+                    type="monotone" 
+                    dataKey="calls" 
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={2} 
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
         </div>
       </div>
-
-      <div className="grid gap-8">
-        <StatsCards stats={stats} />
-        <NetworkStatus />
-      </div>
-
-      <Card className="p-6">
-        <h2 className="text-2xl font-semibold mb-4">Call Volume Trend</h2>
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Line 
-                type="monotone" 
-                dataKey="calls" 
-                stroke="hsl(var(--primary))" 
-                strokeWidth={2} 
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
     </div>
   );
 }
