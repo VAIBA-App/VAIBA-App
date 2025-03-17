@@ -508,29 +508,47 @@ function EditProfileForm({ profile, isNewProfile, onSuccess }: EditProfileFormPr
           throw new Error('Fehler beim Erstellen des Profils');
         }
       } else {
+        // Ensure we have a valid profile ID
+        if (!profile.id) {
+          throw new Error('Ungültige Profil-ID');
+        }
+
+        const updateData = {
+          ...data,
+          name: data.name.trim(),
+          lastName: data.lastName?.trim(),
+          imageUrl,
+          languages: Array.isArray(data.languages)
+            ? data.languages
+            : (data.languages || '').toString().split(',').map(lang => lang.trim()),
+          voiceSettings: data.voiceSettings || {
+            stability: 0.5,
+            similarityBoost: 0.75,
+            style: 0,
+            speed: 1,
+          },
+        };
+
+        console.log('Updating profile with data:', updateData);
+
         const response = await fetch(`/api/profiles/${profile.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            ...data,
-            name: data.name.trim(),
-            lastName: data.lastName?.trim(),
-            imageUrl,
-            languages: Array.isArray(data.languages)
-              ? data.languages
-              : (data.languages || '').toString().split(',').map(lang => lang.trim()),
-          }),
+          body: JSON.stringify(updateData),
         });
 
         if (!response.ok) {
-          throw new Error('Fehler beim Aktualisieren des Profils');
+          const errorData = await response.json().catch(() => null);
+          console.error('Profile update failed:', errorData);
+          throw new Error(errorData?.message || 'Fehler beim Aktualisieren des Profils');
         }
       }
 
       onSuccess();
     } catch (error) {
+      console.error('Submit error:', error);
       toast({
         title: "Fehler",
         description: error instanceof Error ? error.message : "Die Änderungen konnten nicht gespeichert werden.",
