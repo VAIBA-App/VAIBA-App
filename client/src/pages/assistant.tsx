@@ -67,17 +67,8 @@ export default function AssistantPage() {
   const [_, setLocation] = useLocation();
   const [isNavigating, setIsNavigating] = useState(false);
 
-  useEffect(() => {
-    if (isNavigating) {
-      const timer = setTimeout(() => {
-        setLocation('/assistant');
-        setIsNavigating(false);
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [isNavigating, setLocation]);
-
-  const { data, isLoading: isLoadingProfiles, refetch: refetchProfiles } = useQuery<Profile[]>({
+  // Add polling to keep profile list updated
+  const { data: profilesData, isLoading: isLoadingProfiles, refetch: refetchProfiles } = useQuery<Profile[]>({
     queryKey: ['/api/profiles'],
     queryFn: async () => {
       try {
@@ -92,30 +83,28 @@ export default function AssistantPage() {
         return [];
       }
     },
+    refetchInterval: 5000, // Poll every 5 seconds
+    refetchOnWindowFocus: true,
     initialData: [] as Profile[],
   });
 
   // Ensure profiles is always an array
-  const profiles = Array.isArray(data) ? data : [];
+  const profiles = Array.isArray(profilesData) ? profilesData : [];
 
-  const { data: voicesList = [] } = useQuery({
-    queryKey: ['voices'],
-    queryFn: async () => {
-      try {
-        const response = await fetch('https://api.elevenlabs.io/v1/voices', {
-          headers: {
-            'xi-api-key': import.meta.env.VITE_ELEVENLABS_API_KEY,
-          },
-        });
-        if (!response.ok) return [];
-        const data = await response.json();
-        return data.voices || [];
-      } catch (error) {
-        console.error('Error fetching voices:', error);
-        return [];
-      }
-    },
-  });
+  useEffect(() => {
+    // Initial fetch of profiles
+    refetchProfiles();
+  }, [refetchProfiles]);
+
+  useEffect(() => {
+    if (isNavigating) {
+      const timer = setTimeout(() => {
+        setLocation('/assistant');
+        setIsNavigating(false);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isNavigating, setLocation]);
 
   const getVoiceName = (voiceId: string) => {
     const voice = Array.isArray(voicesList) ? voicesList.find((v: any) => v.voice_id === voiceId) : null;
@@ -148,6 +137,7 @@ export default function AssistantPage() {
       }
 
       await queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
+      await refetchProfiles();
 
       toast({
         title: "Profil aktiviert",
@@ -226,6 +216,26 @@ export default function AssistantPage() {
       setSelectedProfiles(newSelected);
     }
   };
+
+  const { data: voicesList = [] } = useQuery({
+    queryKey: ['voices'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('https://api.elevenlabs.io/v1/voices', {
+          headers: {
+            'xi-api-key': import.meta.env.VITE_ELEVENLABS_API_KEY,
+          },
+        });
+        if (!response.ok) return [];
+        const data = await response.json();
+        return data.voices || [];
+      } catch (error) {
+        console.error('Error fetching voices:', error);
+        return [];
+      }
+    },
+  });
+
 
   if (isLoadingProfiles) {
     return <div>Lade Profile...</div>;

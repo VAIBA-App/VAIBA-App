@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { NetworkStatus } from "@/components/dashboard/network-status";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +21,8 @@ interface ChatMessage {
 export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState('');
 
   // Fetch assistant profile
   const { data: activeProfile } = useQuery({
@@ -35,17 +37,18 @@ export default function Dashboard() {
     },
   });
 
-  // Initialize chat with personalized greeting
-  const getInitialGreeting = () => {
-    const assistantName = activeProfile ? `${activeProfile.name}${activeProfile.lastName ? ` ${activeProfile.lastName}` : ''}` : "Maria Adams";
-    return {
-      role: 'assistant' as const,
-      content: `Hallo! Ich bin ${assistantName}. Ich bin Ihr persönlicher VAIBA Assistent. Wie kann ich Ihnen heute helfen?`
+  useEffect(() => {
+    // Update initial greeting when activeProfile changes
+    const getInitialGreeting = () => {
+      const assistantName = activeProfile ? `${activeProfile.name}${activeProfile.lastName ? ` ${activeProfile.lastName}` : ''}` : "VAIBA";
+      return {
+        role: 'assistant' as const,
+        content: `Hallo! Ich bin ${assistantName}. Ich bin Ihr persönlicher VAIBA Assistent. Wie kann ich Ihnen heute helfen?`
+      };
     };
-  };
 
-  const [messages, setMessages] = useState<ChatMessage[]>([getInitialGreeting()]);
-  const [input, setInput] = useState('');
+    setMessages([getInitialGreeting()]);
+  }, [activeProfile]);
 
   const quickCommands = [
     { icon: <RefreshCw className="w-4 h-4" />, label: "Update abrufen" },
@@ -123,7 +126,9 @@ export default function Dashboard() {
           {/* Chat Card */}
           <Card className="h-[500px] mb-8">
             <CardHeader>
-              <CardTitle>Assistent {activeProfile?.name || ""}</CardTitle>
+              <CardTitle>
+                Assistent {activeProfile ? `${activeProfile.name}${activeProfile.lastName ? ` ${activeProfile.lastName}` : ''}` : ""}
+              </CardTitle>
             </CardHeader>
             <CardContent className="h-[calc(100%-4rem)] flex flex-col">
               <ScrollArea className="flex-1 pr-4 mb-4">
