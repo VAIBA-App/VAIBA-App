@@ -105,7 +105,7 @@ export function Sidebar() {
           icon: Search,
         },
         {
-          title: t("customerList"),
+          title: "Anrufliste",
           href: "/customer-list",
           icon: List,
         },
