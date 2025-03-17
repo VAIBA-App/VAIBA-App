@@ -96,7 +96,7 @@ export function Sidebar() {
     },
     {
       title: t("clients"),
-      href: "/call-list",
+      href: "/customer-list",
       icon: Users,
       subItems: [
         {
@@ -105,8 +105,8 @@ export function Sidebar() {
           icon: Search,
         },
         {
-          title: t("callList"),
-          href: "/call-list",
+          title: t("customerList"),
+          href: "/customer-list",
           icon: List,
         },
       ],

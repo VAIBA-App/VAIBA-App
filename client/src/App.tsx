@@ -12,7 +12,7 @@ import "./i18n";
 // Pages
 import Dashboard from "@/pages/dashboard";
 import CustomerSearch from "@/pages/customer-search";
-import CallList from "@/pages/call-list";
+import CustomerList from "@/pages/customer-list";  // Updated import
 import Profile from "@/pages/profile";
 import Calls from "@/pages/calls";
 import AutoCalls from "@/pages/auto-calls";
@@ -60,7 +60,7 @@ function App() {
                       <Route path="/company/invoices" component={Invoices} />
 
                       <Route path="/customer-search" component={CustomerSearch} />
-                      <Route path="/call-list" component={CallList} />
+                      <Route path="/customer-list" component={CustomerList} />  {/* Updated route */}
                       <Route path="/profile" component={Profile} />
                       <Route path="/calls" component={Calls} />
                       <Route path="/auto-calls" component={AutoCalls} />
@@ -81,7 +81,7 @@ function App() {
                   </RootLayout>
                 </ProtectedRoute>
               </Route>
-              <Route path="/simulator" component={Simulator} /> {/*Moved outside ProtectedRoute*/}
+              <Route path="/simulator" component={Simulator} />
             </Switch>
             <Toaster />
           </SearchProvider>

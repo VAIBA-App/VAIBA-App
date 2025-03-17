@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CallList } from "@/components/customers/call-list";
+import { CustomerList } from "@/components/customers/customer-list";
 import { Sidebar } from "@/components/layout/sidebar";
 import { customerApi } from "@/lib/api";
 import { Input } from "@/components/ui/input";
@@ -39,7 +39,7 @@ export default function Customers() {
         {isLoading ? (
           <div>Lade Kunden...</div>
         ) : (
-          <CallList customers={filteredCustomers || []} />
+          <CustomerList customers={filteredCustomers || []} />
         )}
       </main>
     </div>
