@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,17 @@ export default function AssistantPage() {
   const [selectedProfiles, setSelectedProfiles] = useState<Record<number, boolean>>({});
   const queryClient = useQueryClient();
   const [_, setLocation] = useLocation();
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  useEffect(() => {
+    if (isNavigating) {
+      const timer = setTimeout(() => {
+        setLocation('/assistant');
+        setIsNavigating(false);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isNavigating, setLocation]);
 
   const { data: profiles = [], isLoading: isLoadingProfiles, refetch: refetchProfiles } = useQuery({
     queryKey: ['/api/profiles'],
@@ -99,17 +110,17 @@ export default function AssistantPage() {
         throw new Error('Failed to activate profile');
       }
 
-      // Invalidate and refetch queries
+      // Invalidate queries
       await queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
-      await refetchProfiles();
 
       toast({
         title: "Profil aktiviert",
         description: "Das ausgewählte Profil wurde erfolgreich aktiviert.",
       });
 
-      // Force a navigation to refresh the page
-      setLocation('/assistant');
+      // Force reload by navigating away and back
+      setLocation('/');
+      setIsNavigating(true);
     } catch (error) {
       toast({
         title: "Fehler",
