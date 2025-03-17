@@ -96,7 +96,7 @@ export function Sidebar() {
     },
     {
       title: t("clients"),
-      href: "/customer-list",
+      href: "/call-list",
       icon: Users,
       subItems: [
         {
@@ -105,8 +105,8 @@ export function Sidebar() {
           icon: Search,
         },
         {
-          title: t("customerList"),
-          href: "/customer-list",
+          title: t("callList"),
+          href: "/call-list",
           icon: List,
         },
       ],
@@ -161,12 +161,12 @@ export function Sidebar() {
       icon: Mic,
       subItems: [
         {
-          title: "Inst. Voice Cloning",
+          title: "Instant Cloning",
           href: "/voice/ivc",
           icon: Sparkles,
         },
         {
-          title: "Pro. Voice Cloning",
+          title: "Pro Cloning",
           href: "/voice/pvc",
           icon: Award,
         }

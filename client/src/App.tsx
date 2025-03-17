@@ -12,7 +12,7 @@ import "./i18n";
 // Pages
 import Dashboard from "@/pages/dashboard";
 import CustomerSearch from "@/pages/customer-search";
-import CustomerList from "@/pages/customer-list";
+import CallList from "@/pages/call-list";
 import Profile from "@/pages/profile";
 import Calls from "@/pages/calls";
 import AutoCalls from "@/pages/auto-calls";
@@ -60,7 +60,7 @@ function App() {
                       <Route path="/company/invoices" component={Invoices} />
 
                       <Route path="/customer-search" component={CustomerSearch} />
-                      <Route path="/customer-list" component={CustomerList} />
+                      <Route path="/call-list" component={CallList} />
                       <Route path="/profile" component={Profile} />
                       <Route path="/calls" component={Calls} />
                       <Route path="/auto-calls" component={AutoCalls} />

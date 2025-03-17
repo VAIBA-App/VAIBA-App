@@ -7,11 +7,11 @@ import { Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
-interface CustomerListProps {
+interface CallListProps {
   customers: Customer[];
 }
 
-export function CustomerList({ customers }: CustomerListProps) {
+export function CallList({ customers }: CustomerListProps) {
   const [selectedCustomers, setSelectedCustomers] = useState<Record<number, boolean>>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();

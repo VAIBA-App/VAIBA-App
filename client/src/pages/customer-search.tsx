@@ -136,7 +136,7 @@ export default function CustomerSearch() {
     }
   };
 
-  const addSelectedToCustomerList = async () => {
+  const addSelectedToCallList = async () => {
     const selectedResults = searchResults.filter(result => selectedCustomers[result.name]);
 
     if (selectedResults.length === 0) {
@@ -179,7 +179,7 @@ export default function CustomerSearch() {
 
       toast({
         title: "Kunden hinzugefügt",
-        description: `${selectedResults.length} Kunden wurden zur Kundenliste hinzugefügt.`,
+        description: `${selectedResults.length} Kunden wurden zur Anrufliste hinzugefügt.`,
       });
 
       setSelectedCustomers({});
@@ -187,7 +187,7 @@ export default function CustomerSearch() {
       console.error('Error adding customers:', error);
       toast({
         title: "Fehler",
-        description: "Die Kunden konnten nicht zur Kundenliste hinzugefügt werden.",
+        description: "Die Kunden konnten nicht zur Anrufliste hinzugefügt werden.",
         variant: "destructive",
       });
     }
@@ -278,7 +278,7 @@ export default function CustomerSearch() {
                 </Button>
                 <Button
                   variant="default"
-                  onClick={addSelectedToCustomerList}
+                  onClick={addSelectedToCallList}
                   disabled={Object.keys(selectedCustomers).length === 0}
                 >
                   <UserPlus className="mr-2 h-4 w-4" />
