@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { db } from "@db";
 import { users, profiles, customers, calls } from "@db/schema";
 import { eq } from "drizzle-orm";
+import { marked } from 'marked';
 
 // Initialize OpenAI with API key
 const openai = new OpenAI({
@@ -15,6 +16,24 @@ export type SentimentAnalysis = {
   rating: number;
   confidence: number;
 };
+
+// Configure marked options
+marked.setOptions({
+  gfm: true, // GitHub Flavored Markdown
+  breaks: true, // Convert line breaks to <br>
+  headerIds: false, // Don't add IDs to headers
+  mangle: false, // Don't mangle email addresses
+});
+
+// Helper function to convert Markdown to HTML
+function convertToHTML(markdown: string): string {
+  try {
+    return marked.parse(markdown);
+  } catch (error) {
+    console.error('Error converting markdown to HTML:', error);
+    return markdown; // Return original text if conversion fails
+  }
+}
 
 // Helper function to get user context from database with timeout
 async function getUserContext(userId: number) {
@@ -94,33 +113,33 @@ Du bist VAIBA, ein professioneller KI-Assistent für Geschäftskommunikation.
 Deine Aufgabe ist es, klare, professionelle und hilfreiche Antworten zu geben.
 
 Formatierungsrichtlinien:
-- Strukturiere deine Antworten IMMER in deutliche Absätze
+- Strukturiere deine Antworten IMMER in deutliche Absätze mit Markdown
+- Nutze **fette** und *kursive* Schrift für Hervorhebungen
 - Füge eine Leerzeile zwischen Absätzen ein
 - Beginne jeden neuen Gedanken in einem neuen Absatz
 - Verwende Aufzählungspunkte für Listen und wichtige Punkte
 - Nutze passende Emojis (max. 1-2 pro Antwort) für einen freundlichen Ton
 - Setze Trennzeichen (---) zwischen verschiedenen Themenbereichen
-- Hebe wichtige Informationen durch einfache Formatierung hervor
 
 Beispiel für die gewünschte Formatierung:
-🤝 Guten Tag! Ich freue mich, dass Sie sich an mich wenden.
+🤝 **Guten Tag!** Ich freue mich, dass Sie sich an mich wenden.
 
-Zu Ihrer Frage bezüglich der Verkaufsstrategie möchte ich Ihnen folgende Punkte erläutern:
+Zu Ihrer Frage bezüglich der *Verkaufsstrategie* möchte ich Ihnen folgende Punkte erläutern:
 
-- Erstens: Analysieren Sie Ihre Zielgruppe genau
-- Zweitens: Entwickeln Sie maßgeschneiderte Lösungen
-- Drittens: Bleiben Sie im regelmäßigen Kontakt
+- **Erstens:** Analysieren Sie Ihre Zielgruppe genau
+- **Zweitens:** Entwickeln Sie maßgeschneiderte Lösungen
+- **Drittens:** Bleiben Sie im regelmäßigen Kontakt
 
 Lassen Sie uns diese Punkte im Detail durchgehen.
 
 ---
 
 Deine Kernkompetenzen:
-📊 Vertrieb und Kundengewinnung
-📱 Marketing und Social Media
-📈 Geschäftsanalyse und Strategie
-🛠️ Produktentwicklung
-🤝 Kundenbeziehungsmanagement
+📊 **Vertrieb und Kundengewinnung**
+📱 **Marketing und Social Media**
+📈 **Geschäftsanalyse und Strategie**
+🛠️ **Produktentwicklung**
+🤝 **Kundenbeziehungsmanagement**
 
 Halte deine Sprache:
 - Professionell aber freundlich
@@ -137,36 +156,23 @@ Wenn du zusätzliche Informationen benötigst, frage gezielt nach.
   return `
 Du bist ${activeProfile.name}, ${activeProfile.gender === 'weiblich' ? 'eine' : 'ein'} ${activeProfile.position} bei ${activeProfile.company}.
 
-Dein Profil:
+**Dein Profil:**
 👤 Name: ${activeProfile.name} ${activeProfile.lastName || ''}
 📍 Standort: ${activeProfile.location}
 🎓 Ausbildung: ${activeProfile.education}
 🌍 Sprachen: ${activeProfile.languages?.join(', ') || 'Deutsch'}
 
 Formatierungsrichtlinien:
-- Strukturiere deine Antworten IMMER in deutliche Absätze
+- Strukturiere deine Antworten IMMER in deutliche Absätze mit Markdown
+- Nutze **fette** und *kursive* Schrift für Hervorhebungen
 - Füge eine Leerzeile zwischen Absätzen ein
 - Beginne jeden neuen Gedanken in einem neuen Absatz
 - Verwende Aufzählungspunkte für Listen und wichtige Punkte
 - Nutze passende Emojis (max. 1-2 pro Antwort) für einen freundlichen Ton
 - Setze Trennzeichen (---) zwischen verschiedenen Themenbereichen
-- Hebe wichtige Informationen durch einfache Formatierung hervor
-
-Beispiel für die gewünschte Formatierung:
-🤝 Guten Tag! Ich freue mich, dass Sie sich an mich wenden.
-
-Zu Ihrer Frage bezüglich der Verkaufsstrategie möchte ich Ihnen folgende Punkte erläutern:
-
-- Erstens: Analysieren Sie Ihre Zielgruppe genau
-- Zweitens: Entwickeln Sie maßgeschneiderte Lösungen
-- Drittens: Bleiben Sie im regelmäßigen Kontakt
-
-Lassen Sie uns diese Punkte im Detail durchgehen.
-
----
 
 ${recentActivity.calls.length > 0 ? `
-Kontext der letzten Aktivitäten:
+**Kontext der letzten Aktivitäten:**
 ${recentActivity.calls.map(call => 
   `- Gespräch am ${new Date(call.createdAt).toLocaleDateString()}: ${call.status}`
 ).join('\n')}
@@ -174,19 +180,19 @@ ${recentActivity.calls.map(call =>
 ` : ''}
 
 ${recentActivity.customers.length > 0 ? `
-Kunden im System:
+**Kunden im System:**
 ${recentActivity.customers.map(customer => 
   `- ${customer.firstName} ${customer.lastName} von ${customer.company}`
 ).join('\n')}
 
 ` : ''}
 
-Deine Kernkompetenzen:
-📊 Vertrieb und Kundengewinnung
-📱 Marketing und Social Media
-📈 Geschäftsanalyse und Strategie
-🛠️ Produktentwicklung
-🤝 Kundenbeziehungsmanagement
+**Deine Kernkompetenzen:**
+📊 **Vertrieb und Kundengewinnung**
+📱 **Marketing und Social Media**
+📈 **Geschäftsanalyse und Strategie**
+🛠️ **Produktentwicklung**
+🤝 **Kundenbeziehungsmanagement**
 
 Halte deine Sprache:
 - Professionell aber freundlich
@@ -226,10 +232,17 @@ export async function generateChatResponse(message: string, userId: number) {
       ],
     });
 
+    // Convert the Markdown response to HTML
+    const markdownResponse = completion.choices[0].message.content || '';
+    const htmlResponse = convertToHTML(markdownResponse);
+
     console.log(`Total chat generation took ${Date.now() - startTime}ms`);
-    return completion.choices[0].message.content;
+    return htmlResponse;
   } catch (error) {
     console.error('Chat generation failed:', error);
     throw error;
   }
 }
+
+// Export the OpenAI instance for use in other components
+export { openai };

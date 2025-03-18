@@ -11,6 +11,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { openai } from "@/lib/openai";
+import DOMPurify from 'dompurify';
+
+function createMarkup(html: string) {
+  return {
+    __html: DOMPurify.sanitize(html)
+  };
+}
 
 export function ScenarioSimulator() {
   const [selectedScenario, setSelectedScenario] = useState<Scenario>(scenarios[0]);
