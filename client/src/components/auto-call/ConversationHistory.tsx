@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Clock, MessageSquare } from "lucide-react";
 import { Loader2 } from "lucide-react";
+import DOMPurify from 'dompurify';
 
 interface Conversation {
   id: string;
@@ -25,6 +26,12 @@ interface ConversationHistoryProps {
   conversations: Conversation[];
   isLoading: boolean;
   activeProfile?: { name: string }; // Added activeProfile type
+}
+
+function createMarkup(html: string) {
+  return {
+    __html: DOMPurify.sanitize(html)
+  };
 }
 
 export function ConversationHistory({ conversations, isLoading, activeProfile }: ConversationHistoryProps) {
@@ -105,7 +112,10 @@ export function ConversationHistory({ conversations, isLoading, activeProfile }:
                 </div>
                 <div className="bg-primary/5 p-4 rounded-lg">
                   <h4 className="font-medium mb-2">{activeProfile?.name || "Assistent"}:</h4>
-                  <p className="text-sm">{entry.gptResponse}</p>
+                  <div 
+                    className="text-sm prose prose-sm dark:prose-invert max-w-none"
+                    dangerouslySetInnerHTML={createMarkup(entry.gptResponse)}
+                  />
                 </div>
               </div>
             ))}

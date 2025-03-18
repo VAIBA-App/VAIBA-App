@@ -12,10 +12,17 @@ import { useAuth } from "@/hooks/use-auth";
 import { chatApi } from "@/lib/api";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import DOMPurify from 'dompurify';
 
 interface ChatMessage {
   role: 'assistant' | 'user';
   content: string;
+}
+
+function createMarkup(html: string) {
+  return {
+    __html: DOMPurify.sanitize(html)
+  };
 }
 
 export default function Dashboard() {
@@ -152,7 +159,14 @@ export default function Dashboard() {
                             : 'bg-primary text-primary-foreground'
                         }`}
                       >
-                        {message.content}
+                        {message.role === 'assistant' ? (
+                          <div 
+                            dangerouslySetInnerHTML={createMarkup(message.content)}
+                            className="prose prose-sm dark:prose-invert max-w-none"
+                          />
+                        ) : (
+                          message.content
+                        )}
                       </div>
                     </div>
                   ))}
