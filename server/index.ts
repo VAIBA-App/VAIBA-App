@@ -3,13 +3,15 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { createServer } from "net";
 
-// Set APP_URL based on Replit environment
-const replitDomain = process.env.REPL_SLUG && process.env.REPL_OWNER
-  ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
-  : 'http://localhost:5000';
+// Set APP_URL only if not already configured
+if (!process.env.APP_URL) {
+  const replitDomain = process.env.REPL_SLUG && process.env.REPL_OWNER
+    ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+    : 'http://localhost:5000';
 
-process.env.APP_URL = replitDomain;
-console.log('Environment setup: APP_URL set to', process.env.APP_URL);
+  process.env.APP_URL = replitDomain;
+  console.log('Environment setup: APP_URL set to', process.env.APP_URL);
+}
 
 // Disable RAG in development for faster startup
 process.env.DISABLE_RAG = process.env.NODE_ENV === 'development' ? 'true' : 'false';
