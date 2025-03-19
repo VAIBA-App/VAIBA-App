@@ -1,10 +1,19 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
-import { profiles, users, customers } from "@db/schema";
+import { 
+  profiles, 
+  users, 
+  customers, 
+  calls, 
+  insertCustomerSchema, 
+  insertCallSchema 
+} from "@db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { generateChatResponse } from "./lib/openai";
+import { sendVerificationEmail, verifyEmail } from './lib/email';
+import bcrypt from 'bcrypt';
 
 // Profile validation schema
 const insertProfileSchema = z.object({
@@ -27,6 +36,19 @@ const insertProfileSchema = z.object({
     speed: z.number(),
   }).optional(),
   isActive: z.boolean().optional(),
+});
+
+// Registration schema
+const registrationSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters")
+});
+
+// Login schema
+const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters")
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -57,7 +79,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { email, password } = result.data;
 
       // For now, just return success
-      res.json({ 
+      res.json({
         token: "dummy-token",
         user: {
           email,
@@ -69,6 +91,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Login failed" });
     }
   });
+
+  // Registration route
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const result = registrationSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({
+          message: "Invalid registration data",
+          errors: result.error.errors
+        });
+      }
+
+      const { name, email, password } = result.data;
+
+      // Check if user already exists
+      const existingUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      if (existingUser.length > 0) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create user
+      const [user] = await db
+        .insert(users)
+        .values({
+          name,
+          email,
+          password: hashedPassword,
+          emailVerified: null, // Will be set after verification
+          role: 'user',
+        })
+        .returning();
+
+      // Send verification email
+      await sendVerificationEmail(email, name);
+
+      res.status(201).json({
+        message: "Registration successful. Please check your email to verify your account.",
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+        }
+      });
+    } catch (error) {
+      console.error('Registration error:', error);
+      res.status(500).json({
+        message: "Error during registration",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Email verification route
+  app.get("/api/auth/verify-email", async (req, res) => {
+    try {
+      const { token } = req.query;
+
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({ message: "Invalid verification token" });
+      }
+
+      const verified = await verifyEmail(token);
+
+      if (verified) {
+        res.json({ message: "Email verified successfully" });
+      } else {
+        res.status(400).json({ message: "Invalid or expired verification token" });
+      }
+    } catch (error) {
+      console.error('Verification error:', error);
+      res.status(500).json({
+        message: "Error during email verification",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
 
   // Test route
   app.get("/api/test", (_req, res) => {
@@ -83,7 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(profilesList);
     } catch (error) {
       console.error('Error fetching profiles:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Error loading profiles",
         error: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -117,7 +224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(profile);
     } catch (error) {
       console.error('Error creating profile:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Error creating profile",
         error: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -219,7 +326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(customersList);
     } catch (error) {
       console.error('Error fetching customers:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Error loading customers",
         error: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -355,8 +462,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Specific error handling
       if (error.response?.status === 401) {
-        return res.status(401).json({ 
-          message: "Authentication error calling OpenAI API" 
+        return res.status(401).json({
+          message: "Authentication error calling OpenAI API"
         });
       }
 
@@ -393,13 +500,3 @@ const insertCustomerSchema = z.object({});
 const insertCallSchema = z.object({});
 
 const calls = {}; // Placeholder - needs actual schema import
-const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters")
-});
-
-//This function is now imported from ./lib/openai
-// async function generateChatResponse(message: string, userId: number): Promise<string> {
-//   //Implementation for chat response generation. This is a placeholder.
-//   return "placeholder response";
-// }
