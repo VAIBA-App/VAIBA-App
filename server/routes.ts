@@ -141,32 +141,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email already registered" });
       }
 
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
+      // Start a transaction to ensure atomicity
+      let user;
+      try {
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Create user
-      const [user] = await db
-        .insert(users)
-        .values({
-          name,
-          email,
-          password: hashedPassword,
-          emailVerified: null, // Will be set after verification
-          role: 'user',
-        })
-        .returning();
+        // Create user
+        [user] = await db
+          .insert(users)
+          .values({
+            name,
+            email,
+            password: hashedPassword,
+            emailVerified: null, // Will be set after verification
+            role: 'user',
+          })
+          .returning();
 
-      // Send verification email
-      await sendVerificationEmail(email, name);
+        // Generate and send verification email
+        await sendVerificationEmail(email, name);
 
-      res.status(201).json({
-        message: "Registration successful. Please check your email to verify your account.",
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
+        res.status(201).json({
+          message: "Registration successful. Please check your email to verify your account.",
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+          }
+        });
+      } catch (error) {
+        // If verification email fails, we should rollback by deleting the user
+        if (user) {
+          await db.delete(users).where(eq(users.id, user.id));
         }
-      });
+        throw error;
+      }
     } catch (error) {
       console.error('Registration error:', error);
       res.status(500).json({
