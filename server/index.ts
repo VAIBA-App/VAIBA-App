@@ -3,13 +3,9 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { createServer } from "net";
 
-// Set APP_URL only if not already configured
+// Always use localhost:5000 for local development
 if (!process.env.APP_URL) {
-  const replitDomain = process.env.REPL_SLUG && process.env.REPL_OWNER
-    ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
-    : 'http://localhost:5000';
-
-  process.env.APP_URL = replitDomain;
+  process.env.APP_URL = 'http://localhost:5000';
   console.log('Environment setup: APP_URL set to', process.env.APP_URL);
 }
 
