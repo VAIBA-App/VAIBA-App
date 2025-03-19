@@ -78,12 +78,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { email, password } = result.data;
 
-      // For now, just return success
+      // Find user by email
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      if (!user) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      // Check if email is verified
+      if (!user.emailVerified) {
+        return res.status(401).json({ 
+          message: "Please verify your email address before logging in"
+        });
+      }
+
+      // Compare passwords
+      const validPassword = await bcrypt.compare(password, user.password);
+      if (!validPassword) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
       res.json({
         token: "dummy-token",
         user: {
-          email,
-          role: "user"
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role
         }
       });
     } catch (error) {
@@ -106,13 +131,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { name, email, password } = result.data;
 
       // Check if user already exists
-      const existingUser = await db
+      const [existingUser] = await db
         .select()
         .from(users)
         .where(eq(users.email, email))
         .limit(1);
 
-      if (existingUser.length > 0) {
+      if (existingUser) {
         return res.status(400).json({ message: "Email already registered" });
       }
 
