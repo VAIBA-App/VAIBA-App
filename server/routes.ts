@@ -163,7 +163,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await sendVerificationEmail(email, name);
 
         res.status(201).json({
-          message: "Registration successful. Please check your email to verify your account.",
+          message: "Registration successful! Please check your email to verify your account before logging in.",
+          requiresVerification: true,
           user: {
             id: user.id,
             email: user.email,

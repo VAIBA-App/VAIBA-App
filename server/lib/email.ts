@@ -91,8 +91,8 @@ export async function sendVerificationEmail(email: string, name: string): Promis
 
   // Use the APP_URL from environment variables
   const appUrl = process.env.APP_URL || 'http://localhost:5000';
-  // Create verification link with the correct domain
-  const verificationLink = `${appUrl}/verify-email?token=${token}`;
+  // Create verification link with the correct backend API route
+  const verificationLink = `${appUrl}/api/auth/verify-email?token=${token}`;
 
   // Send email
   await transporter.sendMail({
