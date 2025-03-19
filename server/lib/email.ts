@@ -37,7 +37,7 @@ const getVerificationEmailTemplate = (verificationLink: string) => `
       display: inline-block;
       padding: 10px 20px;
       background-color: #007bff;
-      color: white;
+      color: white !important;
       text-decoration: none;
       border-radius: 5px;
       margin: 20px 0;
@@ -53,13 +53,13 @@ const getVerificationEmailTemplate = (verificationLink: string) => `
   <div class="container">
     <h2>Welcome to VAIBA!</h2>
     <p>Thank you for registering. Please verify your email address by clicking the button below:</p>
-    
+
     <a href="${verificationLink}" class="button">Verify Email Address</a>
-    
+
     <p>This verification link will expire in 24 hours.</p>
-    
+
     <p>If you did not create an account, no further action is required.</p>
-    
+
     <div class="footer">
       <p>Best regards,<br>The VAIBA Team</p>
     </div>
@@ -71,7 +71,7 @@ const getVerificationEmailTemplate = (verificationLink: string) => `
 export async function generateVerificationToken(email: string): Promise<string> {
   // Generate a random token
   const token = crypto.randomBytes(32).toString('hex');
-  
+
   // Set expiration to 24 hours from now
   const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
@@ -88,9 +88,11 @@ export async function generateVerificationToken(email: string): Promise<string> 
 export async function sendVerificationEmail(email: string, name: string): Promise<void> {
   // Generate verification token
   const token = await generateVerificationToken(email);
-  
-  // Create verification link
-  const verificationLink = `${process.env.APP_URL}/verify-email?token=${token}`;
+
+  // Use the APP_URL from environment variables
+  const appUrl = process.env.APP_URL || 'http://localhost:5000';
+  // Create verification link with the correct domain
+  const verificationLink = `${appUrl}/verify-email?token=${token}`;
 
   // Send email
   await transporter.sendMail({
