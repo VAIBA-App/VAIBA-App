@@ -510,6 +510,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add these endpoints here
+  app.get("/api/company/information", async (_req, res) => {
+    try {
+      // Get the most recent company information
+      const [companyInfo] = await db.execute(
+        `SELECT * FROM Business_Information ORDER BY created_at DESC LIMIT 1`
+      );
+
+      if (!companyInfo) {
+        return res.json(null);
+      }
+
+      // Transform the data to match the frontend structure
+      const response = {
+        name: companyInfo.name,
+        industry: companyInfo.industry,
+        services: {
+          onlineService: companyInfo.online_service,
+          localService: companyInfo.local_service,
+          onlineProduct: companyInfo.online_product,
+          localProduct: companyInfo.local_product,
+        },
+        address: {
+          street: companyInfo.street,
+          zipCode: companyInfo.zip_code,
+          city: companyInfo.city,
+          country: companyInfo.country,
+        },
+        email: companyInfo.email,
+        website: companyInfo.website,
+        vatId: companyInfo.vat_id,
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching company information:', error);
+      res.status(500).json({ message: "Error loading company information" });
+    }
+  });
+
+  app.post("/api/company/information", async (req, res) => {
+    try {
+      const {
+        name,
+        industry,
+        online_service,
+        local_service,
+        online_product,
+        local_product,
+        street,
+        zip_code,
+        city,
+        country,
+        email,
+        website,
+        vat_id,
+      } = req.body;
+
+      // Insert new company information
+      const [savedInfo] = await db.execute(
+        `INSERT INTO Business_Information (
+          name, industry, online_service, local_service, 
+          online_product, local_product, street, zip_code, 
+          city, country, email, website, vat_id
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+        ) RETURNING *`,
+        [
+          name, industry, online_service, local_service,
+          online_product, local_product, street, zip_code,
+          city, country, email, website, vat_id
+        ]
+      );
+
+      res.json({
+        success: true,
+        data: savedInfo
+      });
+    } catch (error) {
+      console.error('Error saving company information:', error);
+      res.status(500).json({ 
+        message: "Error saving company information",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   console.log('Route registration completed');
 
   const httpServer = createServer(app);
