@@ -229,7 +229,7 @@ export function Sidebar() {
       <div className="flex h-16 items-center justify-between px-3">
         <div className="flex-shrink-0">
           <img
-            src="/FB-App-OhneBackground.png"
+            src="/logo.png"
             alt="VAIBA Logo"
             width={32}
             height={32}
