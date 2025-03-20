@@ -657,7 +657,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get logo as base64 endpoint
   app.get("/api/assets/logo-base64", async (_req, res) => {
     try {
       console.log('Fetching logo from database...');
@@ -684,14 +683,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: asset.id,
         name: asset.name,
         mime_type: asset.mime_type,
-        data_length: asset.data.length
+        data_length: asset.data.length,
+        data_preview: asset.data.substring(0, 50) + '...'
       });
 
-      // Set cache headers
+      // Set proper headers
       res.setHeader('Cache-Control', 'public, must-revalidate, max-age=31536000');
       res.setHeader('Content-Type', 'application/json');
 
-      res.json({ data: asset.data });
+      // Send the response with proper data URL format
+      res.json({
+        data: `data:${asset.mime_type};base64,${asset.data}`
+      });
     } catch (error) {
       console.error('Error fetching logo:', error);
       res.status(500).json({ message: "Error loading logo" });

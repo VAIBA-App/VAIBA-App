@@ -61,17 +61,17 @@ useEffect(() => {
         }
 
         const data = await response.json();
-        if (!data || typeof data.data !== 'string') {
-          console.error('Invalid logo data:', data);
+        console.log('Received logo response:', {
+          hasData: !!data.data,
+          dataLength: data.data?.length || 0,
+          preview: data.data?.substring(0, 50) + '...'
+        });
+
+        if (!data || !data.data || !data.data.startsWith('data:')) {
           throw new Error('Invalid logo data received');
         }
 
-        console.log('Received logo data:', {
-          length: data.data.length,
-          preview: data.data.substring(0, 50) + '...'
-        });
-
-        setLogoData(data.data);
+        setLogoData(data.data); // data.data is now a complete data URL
         setLogoError(null);
       } catch (error) {
         console.error('Error loading logo:', error);
@@ -270,7 +270,7 @@ useEffect(() => {
             </div>
           ) : logoData ? (
             <img
-              src={`data:image/png;base64,${logoData}`}
+              src={logoData} // Now using the complete data URL
               alt="VAIBA Logo"
               width={32}
               height={32}
@@ -281,8 +281,7 @@ useEffect(() => {
               onError={(e) => {
                 console.error('Logo rendering error:', e);
                 const img = e.target as HTMLImageElement;
-                console.log('Failed src length:', img.src.length);
-                console.log('Failed src preview:', img.src.substring(0, 100));
+                console.log('Failed src preview:', img.src.substring(0, 100) + '...');
                 setLogoError('Failed to render logo');
               }}
             />
