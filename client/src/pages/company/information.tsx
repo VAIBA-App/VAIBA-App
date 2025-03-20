@@ -109,40 +109,49 @@ export default function CompanyInformation() {
 
   const saveCompanyInfo = useMutation({
     mutationFn: async (data: CompanyInformation) => {
-      const response = await fetch("/api/company/information", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: data.name,
-          industry: data.industry,
-          online_service: data.services.onlineService,
-          local_service: data.services.localService,
-          online_product: data.services.onlineProduct,
-          local_product: data.services.localProduct,
-          street: data.address.street,
-          zip_code: data.address.zipCode,
-          city: data.address.city,
-          country: data.address.country,
-          email: data.email,
-          website: data.website,
-          vat_id: data.vatId,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Server response:", errorText);
-        throw new Error(`Failed to save company information: ${response.statusText}`);
-      }
-
       try {
-        return await response.json();
+        const response = await fetch("/api/company/information", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: data.name,
+            industry: data.industry,
+            services: {
+              onlineService: data.services?.onlineService || false,
+              localService: data.services?.localService || false,
+              onlineProduct: data.services?.onlineProduct || false,
+              localProduct: data.services?.localProduct || false,
+            },
+            address: {
+              street: data.address?.street || '',
+              zipCode: data.address?.zipCode || '',
+              city: data.address?.city || '',
+              country: data.address?.country || '',
+            },
+            email: data.email || '',
+            website: data.website || 'http://',
+            vatId: data.vatId || '',
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Server response:", errorText);
+          throw new Error(`Failed to save company information: ${response.statusText}`);
+        }
+
+        try {
+          return await response.json();
+        } catch (error) {
+          console.error("Failed to parse response:", error);
+          // If we can't parse the response as JSON, return a simple success object
+          return { success: true };
+        }
       } catch (error) {
-        console.error("Failed to parse response:", error);
-        // If we can't parse the response as JSON, return a simple success object
-        return { success: true };
+        console.error("Save error:", error);
+        throw error;
       }
     },
     onSuccess: () => {
