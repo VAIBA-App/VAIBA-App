@@ -233,7 +233,7 @@ export function Sidebar() {
           isCollapsed ? "opacity-0 w-0" : "opacity-100"
         )}>
           <img
-            src="/attached_assets/FB-App-OhneBackground.png"
+            src="/api/assets/logo"
             alt="VAIBA Logo"
             className={cn(
               "h-8 w-auto",

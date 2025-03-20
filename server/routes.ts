@@ -1,14 +1,15 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
-import { 
-  profiles, 
-  users, 
-  customers, 
-  calls, 
-  insertCustomerSchema, 
+import {
+  profiles,
+  users,
+  customers,
+  calls,
+  insertCustomerSchema,
   insertCallSchema,
-  Business_Information
+  Business_Information,
+  Assets
 } from "@db/schema";
 import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
@@ -92,7 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if email is verified
       if (!user.emailVerified) {
-        return res.status(401).json({ 
+        return res.status(401).json({
           message: "Please verify your email address before logging in"
         });
       }
@@ -587,10 +588,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error saving company information:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Error saving company information",
         error: error instanceof Error ? error.message : 'Unknown error'
       });
+    }
+  });
+
+  // Add these asset endpoints
+  app.post("/api/assets", async (req, res) => {
+    try {
+      const { name, data, mime_type } = req.body;
+
+      // Insert asset into database
+      const [savedAsset] = await db.insert(Assets).values({
+        name,
+        data,
+        mime_type,
+        created_at: new Date(),
+      }).returning();
+
+      res.json({
+        success: true,
+        data: savedAsset
+      });
+    } catch (error) {
+      console.error('Error saving asset:', error);
+      res.status(500).json({
+        message: "Error saving asset",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.get("/api/assets/:name", async (req, res) => {
+    try {
+      const { name } = req.params;
+
+      const asset = await db.query.Assets.findFirst({
+        where: (assets) => eq(assets.name, name)
+      });
+
+      if (!asset) {
+        return res.status(404).json({ message: "Asset not found" });
+      }
+
+      res.setHeader('Content-Type', asset.mime_type);
+      res.send(Buffer.from(asset.data, 'base64'));
+    } catch (error) {
+      console.error('Error fetching asset:', error);
+      res.status(500).json({ message: "Error loading asset" });
     }
   });
 

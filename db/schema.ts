@@ -223,3 +223,19 @@ export type InsertBusinessInformation = typeof Business_Information.$inferInsert
 
 export const insertBusinessInformationSchema = createInsertSchema(Business_Information);
 export const selectBusinessInformationSchema = createSelectSchema(Business_Information);
+
+// Add this after the other table definitions
+export const Assets = pgTable("assets", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  data: text("data").notNull(),
+  mime_type: varchar("mime_type", { length: 255 }).notNull(),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+// Add these types and schemas
+export type Asset = typeof Assets.$inferSelect;
+export type InsertAsset = typeof Assets.$inferInsert;
+
+export const insertAssetSchema = createInsertSchema(Assets);
+export const selectAssetSchema = createSelectSchema(Assets);
