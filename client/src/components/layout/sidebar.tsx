@@ -44,51 +44,8 @@ export function Sidebar() {
   const [location] = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
-  const [logoData, setLogoData] = useState<string | null>(null);
-  const [logoError, setLogoError] = useState<string | null>(null);
   const { t } = useTranslation();
   const { logoutMutation } = useAuth();
-
-  useEffect(() => {
-    const fetchLogo = async () => {
-      try {
-        console.log('Fetching logo...');
-        const response = await fetch('/api/assets/logo-base64');
-
-        // Log the raw response status and headers
-        console.log('Logo Response:', {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries())
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(`HTTP error! status: ${response.status}, message: ${JSON.stringify(errorData)}`);
-        }
-
-        const data = await response.json();
-        console.log('Received logo response:', {
-          hasData: !!data.data,
-          dataLength: data.data?.length || 0,
-          preview: data.data?.substring(0, 50) + '...'
-        });
-
-        if (!data || !data.data || !data.data.startsWith('data:')) {
-          throw new Error('Invalid logo data received');
-        }
-
-        setLogoData(data.data); // data.data is now a complete data URL
-        setLogoError(null);
-      } catch (error) {
-        console.error('Error loading logo:', error);
-        setLogoError(error instanceof Error ? error.message : 'Failed to load logo');
-        setLogoData(null);
-      }
-    };
-
-    fetchLogo();
-  }, []);
 
   const toggleExpand = (href: string) => {
     setExpandedItems(prev =>
@@ -271,30 +228,16 @@ export function Sidebar() {
     >
       <div className="flex h-16 items-center justify-between px-3">
         <div className="flex-shrink-0">
-          {logoError ? (
-            <div className="h-8 w-8 bg-red-100 flex items-center justify-center rounded">
-              <span className="text-xs text-red-500" title={logoError}>!</span>
-            </div>
-          ) : logoData ? (
-            <img
-              src={logoData} // Using complete data URL
-              alt="VAIBA Logo"
-              width={32}
-              height={32}
-              className={cn(
-                "h-8",
-                isCollapsed ? "w-0" : "w-auto"
-              )}
-              onError={(e) => {
-                console.error('Logo rendering error:', e);
-                const img = e.target as HTMLImageElement;
-                console.log('Failed src preview:', img.src.substring(0, 100) + '...');
-                setLogoError('Failed to render logo');
-              }}
-            />
-          ) : (
-            <div className="h-8 w-8 bg-muted animate-pulse rounded" />
-          )}
+          <img
+            src="/FB-App-OhneBackground.png"
+            alt="VAIBA Logo"
+            width={32}
+            height={32}
+            className={cn(
+              "h-8",
+              isCollapsed ? "w-0" : "w-auto"
+            )}
+          />
         </div>
         <Button
           variant="ghost"
