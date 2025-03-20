@@ -2,8 +2,9 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
+import { Image } from "@/components/ui/image";
 import {
-  UserPlus, 
+  UserPlus,
   LayoutDashboard,
   Users,
   PhoneCall,
@@ -31,11 +32,11 @@ import {
   Award,
   BadgeInfo,
   LogOut,
-  Building2, // Icon für Firma
-  Briefcase, // Icon für Portfolio
-  Calculator, // Icon für Preisgestaltung
-  TrendingUp, // Icon für Umsatz
-  Receipt, // Icon für Rechnungen
+  Building2,
+  Briefcase,
+  Calculator,
+  TrendingUp,
+  Receipt,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -227,12 +228,19 @@ export function Sidebar() {
       )}
     >
       <div className="flex h-16 items-center justify-between px-3">
-        <div className={cn(
-          "text-lg font-semibold transition-opacity duration-200",
+        <Link href="/" className={cn(
+          "transition-opacity duration-200 flex items-center",
           isCollapsed ? "opacity-0 w-0" : "opacity-100"
         )}>
-          VAIBA Sales
-        </div>
+          <img
+            src="/attached_assets/FB-App-OhneBackground.png"
+            alt="VAIBA Logo"
+            className={cn(
+              "h-8 w-auto",
+              isCollapsed ? "w-0" : "w-auto"
+            )}
+          />
+        </Link>
         <Button
           variant="ghost"
           size="sm"
