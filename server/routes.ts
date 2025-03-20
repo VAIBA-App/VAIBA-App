@@ -7,9 +7,10 @@ import {
   customers, 
   calls, 
   insertCustomerSchema, 
-  insertCallSchema 
+  insertCallSchema,
+  Business_Information
 } from "@db/schema";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
 import { generateChatResponse } from "./lib/openai";
 import { sendVerificationEmail, verifyEmail } from './lib/email';
@@ -514,9 +515,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/company/information", async (_req, res) => {
     try {
       // Get the most recent company information
-      const [companyInfo] = await db.execute(
-        `SELECT * FROM Business_Information ORDER BY created_at DESC LIMIT 1`
-      );
+      const companyInfo = await db.query.Business_Information.findFirst({
+        orderBy: (info) => [desc(info.created_at)]
+      });
 
       if (!companyInfo) {
         return res.json(null);
@@ -555,38 +556,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const {
         name,
         industry,
-        online_service,
-        local_service,
-        online_product,
-        local_product,
-        street,
-        zip_code,
-        city,
-        country,
+        services,
+        address,
         email,
         website,
-        vat_id,
+        vatId,
       } = req.body;
 
-      // Insert new company information
-      const [savedInfo] = await db.execute(
-        `INSERT INTO Business_Information (
-          name, industry, online_service, local_service, 
-          online_product, local_product, street, zip_code, 
-          city, country, email, website, vat_id
-        ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
-        ) RETURNING *`,
-        [
-          name, industry, online_service, local_service,
-          online_product, local_product, street, zip_code,
-          city, country, email, website, vat_id
-        ]
-      );
+      // Insert new company information using drizzle
+      const savedInfo = await db.insert(Business_Information).values({
+        name,
+        industry,
+        online_service: services.onlineService,
+        local_service: services.localService,
+        online_product: services.onlineProduct,
+        local_product: services.localProduct,
+        street: address.street,
+        zip_code: address.zipCode,
+        city: address.city,
+        country: address.country,
+        email,
+        website,
+        vat_id: vatId,
+        created_at: new Date(),
+      }).returning();
 
       res.json({
         success: true,
-        data: savedInfo
+        data: savedInfo[0]
       });
     } catch (error) {
       console.error('Error saving company information:', error);

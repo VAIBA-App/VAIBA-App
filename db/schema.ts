@@ -197,3 +197,29 @@ export const selectUserSchema = createSelectSchema(users);
 export const selectAccountSchema = createSelectSchema(accounts);
 export const selectSessionSchema = createSelectSchema(sessions);
 export const selectVerificationTokenSchema = createSelectSchema(verificationTokens);
+
+// Add this after the other table definitions
+export const Business_Information = pgTable("Business_Information", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }),
+  industry: varchar("industry", { length: 255 }),
+  online_service: boolean("online_service").default(false),
+  local_service: boolean("local_service").default(false),
+  online_product: boolean("online_product").default(false),
+  local_product: boolean("local_product").default(false),
+  street: varchar("street", { length: 255 }),
+  zip_code: varchar("zip_code", { length: 20 }),
+  city: varchar("city", { length: 255 }),
+  country: varchar("country", { length: 255 }),
+  email: varchar("email", { length: 255 }),
+  website: varchar("website", { length: 255 }),
+  vat_id: varchar("vat_id", { length: 255 }),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+// Add these types and schemas
+export type BusinessInformation = typeof Business_Information.$inferSelect;
+export type InsertBusinessInformation = typeof Business_Information.$inferInsert;
+
+export const insertBusinessInformationSchema = createInsertSchema(Business_Information);
+export const selectBusinessInformationSchema = createSelectSchema(Business_Information);

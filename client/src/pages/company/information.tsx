@@ -73,7 +73,7 @@ export default function CompanyInformation() {
         country: "",
       },
       email: "",
-      website: "",
+      website: "http://",
       vatId: "",
     },
   });
@@ -88,6 +88,10 @@ export default function CompanyInformation() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
+        // Ensure website field has http:// prefix
+        if (data && data.website && !data.website.startsWith('http://') && !data.website.startsWith('https://')) {
+          data.website = `http://${data.website}`;
+        }
         return data;
       } catch (error) {
         console.error("Failed to fetch company information:", error);
@@ -318,8 +322,8 @@ export default function CompanyInformation() {
                 )}
               />
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full"
                 disabled={saveCompanyInfo.isPending}
               >
