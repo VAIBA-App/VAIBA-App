@@ -1,0 +1,66 @@
+Rendering protected content
+ProtectedRoute: 
+Object {isLoading: false, hasUser: true}
+Rendering protected content
+i18next::translator: missingKey de translation logout logout
+Testing OpenAI connection...
+Testing ElevenLabs connection...
+Testing Google Maps API connection...
+ProtectedRoute: 
+Object {isLoading: false, hasUser: true}
+Rendering protected content
+ProtectedRoute: 
+Object {isLoading: false, hasUser: true}
+Rendering protected content
+i18next::translator: missingKey de translation logout logout
+Google API connection successful
+Error loading logo: 
+Error {}
+message: "HTTP error! status: 404"
+stack: "Error: HTTP error! status: 404↵ at fetchLogo (https://1fcd0585-aec3-436c-8a98-5d5bd01d08b0-00-2v2jdjw8k009x.pike.replit.dev/src/components/layout/sidebar.tsx:72:17)"
+get stack: ƒ ()
+length: 0
+name: ""
+[[Prototype]]: ƒ ()
+set stack: ƒ ()
+length: 1
+name: ""
+[[Prototype]]: ƒ ()
+apply: ƒ apply()
+arguments: "'caller', 'callee', and 'arguments' properties may not be accessed on strict mode functions or the arguments objects for calls to them"
+get arguments: ƒ ()
+set arguments: ƒ ()
+bind: ƒ bind()
+call: ƒ call()
+caller: "'caller', 'callee', and 'arguments' properties may not be accessed on strict mode functions or the arguments objects for calls to them"
+get caller: ƒ ()
+set caller: ƒ ()
+constructor: ƒ Function()
+length: 0
+name: ""
+toString: ƒ toString()
+Symbol(Symbol.hasInstance): undefined
+[[Prototype]]: Object
+[[Prototype]]: Object
+constructor: ƒ Error()
+message: "HTTP error! status: 404"
+name: "Error"
+toString: ƒ toString()
+length: 0
+name: "toString"
+[[Prototype]]: ƒ ()
+[[Prototype]]: Object
+constructor: ƒ Function()
+hasOwnProperty: ƒ hasOwnProperty()
+isPrototypeOf: ƒ isPrototypeOf()
+propertyIsEnumerable: ƒ propertyIsEnumerable()
+toLocaleString: ƒ toLocaleString()
+toString: ƒ toString()
+valueOf: ƒ valueOf()
+__defineGetter__: ƒ __defineGetter__()
+__defineSetter__: ƒ __defineSetter__()
+__lookupGetter__: ƒ __lookupGetter__()
+__lookupSetter__: ƒ __lookupSetter__()
+__proto__: ƒ ()
+get __proto__: ƒ get __proto__()
+set __proto__: ƒ set __proto__()

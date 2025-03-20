@@ -52,15 +52,25 @@ export function Sidebar() {
   useEffect(() => {
     const fetchLogo = async () => {
       try {
+        console.log('Fetching logo...');
         const response = await fetch('/api/assets/logo-base64');
+
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const errorText = await response.text();
+          throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
         }
+
         const data = await response.json();
         if (!data || typeof data.data !== 'string') {
+          console.error('Invalid logo data:', data);
           throw new Error('Invalid logo data received');
         }
-        console.log('Received logo data length:', data.data.length);
+
+        console.log('Received logo data:', {
+          length: data.data.length,
+          preview: data.data.substring(0, 50) + '...'
+        });
+
         setLogoData(data.data);
         setLogoError(null);
       } catch (error) {

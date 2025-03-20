@@ -660,9 +660,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get logo as base64 endpoint
   app.get("/api/assets/logo-base64", async (_req, res) => {
     try {
+      console.log('Fetching logo from database...');
+
       const asset = await db.query.Assets.findFirst({
-        where: (assets) => eq(assets.name, 'logo'),
-        orderBy: (assets) => [desc(assets.created_at)]
+        where: eq(Assets.name, 'logo'),
+        orderBy: [desc(Assets.created_at)]
       });
 
       if (!asset) {
@@ -670,13 +672,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Logo not found" });
       }
 
+      // Log asset details
+      console.log('Found asset:', {
+        id: asset.id,
+        name: asset.name,
+        mime_type: asset.mime_type,
+        created_at: asset.created_at,
+        data_length: asset.data?.length || 0
+      });
+
       // Decode hex-escaped data to binary, then convert to base64
       const binaryData = Buffer.from(asset.data.slice(2), 'hex'); // Remove \x prefix and convert hex to binary
       const base64Data = binaryData.toString('base64');
 
-      console.log('Asset ID:', asset.id);
-      console.log('Mime Type:', asset.mime_type);
-      console.log('Data length:', base64Data.length);
+      console.log('Processed logo data:', {
+        originalLength: asset.data.length,
+        binaryLength: binaryData.length,
+        base64Length: base64Data.length
+      });
+
       res.json({ data: base64Data });
     } catch (error) {
       console.error('Error fetching logo:', error);
