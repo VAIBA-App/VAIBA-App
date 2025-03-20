@@ -16,6 +16,7 @@ import { z } from "zod";
 import { generateChatResponse } from "./lib/openai";
 import { sendVerificationEmail, verifyEmail } from './lib/email';
 import bcrypt from 'bcrypt';
+import { validateAddress } from './lib/address-validation';
 
 // Profile validation schema
 const insertProfileSchema = z.object({
@@ -698,6 +699,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching logo:', error);
       res.status(500).json({ message: "Error loading logo" });
+    }
+  });
+
+  // Add validation endpoint
+  app.post("/api/validate-address", async (req, res) => {
+    try {
+      const { address } = req.body;
+
+      if (!address) {
+        return res.status(400).json({ message: "Address data is required" });
+      }
+
+      const validationResult = await validateAddress(address);
+      res.json(validationResult);
+    } catch (error) {
+      console.error('Error validating address:', error);
+      res.status(500).json({ 
+        message: "Error validating address",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

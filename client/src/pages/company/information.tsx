@@ -8,7 +8,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import React from 'react';
+import React, { useState, useMemo } from 'react';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const companyInformationSchema = z.object({
   name: z.string().optional(),
@@ -78,34 +80,41 @@ export default function CompanyInformation() {
     },
   });
 
-  // Query to fetch saved company information
-  const { data: savedData } = useQuery({
-    queryKey: ['companyInformation'],
-    queryFn: async () => {
-      try {
-        const response = await fetch("/api/company/information");
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        // Ensure website field has http:// prefix
-        if (data && data.website && !data.website.startsWith('http://') && !data.website.startsWith('https://')) {
-          data.website = `http://${data.website}`;
-        }
-        return data;
-      } catch (error) {
-        console.error("Failed to fetch company information:", error);
-        return null;
+  const [addressErrors, setAddressErrors] = useState<Record<string, string>>({});
+
+  const validateAddressMutation = useMutation({
+    mutationFn: async (address: CompanyInformation['address']) => {
+      const response = await fetch("/api/validate-address", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ address }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to validate address');
       }
+
+      return response.json();
     },
   });
 
-  // Update form when saved data is loaded
-  React.useEffect(() => {
-    if (savedData) {
-      form.reset(savedData);
+  const handleAddressValidation = async (address: CompanyInformation['address']) => {
+    try {
+      const result = await validateAddressMutation.mutateAsync(address);
+      setAddressErrors(result.errors || {});
+      return result.isValid;
+    } catch (error) {
+      console.error('Address validation error:', error);
+      toast({
+        title: "Fehler",
+        description: "Adressvalidierung fehlgeschlagen",
+        variant: "destructive",
+      });
+      return false;
     }
-  }, [savedData, form]);
+  };
 
   const saveCompanyInfo = useMutation({
     mutationFn: async (data: CompanyInformation) => {
@@ -146,7 +155,6 @@ export default function CompanyInformation() {
           return await response.json();
         } catch (error) {
           console.error("Failed to parse response:", error);
-          // If we can't parse the response as JSON, return a simple success object
           return { success: true };
         }
       } catch (error) {
@@ -171,9 +179,47 @@ export default function CompanyInformation() {
     },
   });
 
-  const onSubmit = (data: CompanyInformation) => {
+  const onSubmit = async (data: CompanyInformation) => {
+    const isAddressValid = await handleAddressValidation(data.address);
+
+    if (!isAddressValid) {
+      toast({
+        title: "Validierungsfehler",
+        description: "Bitte überprüfen Sie die Adressangaben",
+        variant: "destructive",
+      });
+      return;
+    }
+
     saveCompanyInfo.mutate(data);
   };
+
+  const { data: savedData } = useQuery({
+    queryKey: ['companyInformation'],
+    queryFn: async () => {
+      try {
+        const response = await fetch("/api/company/information");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data && data.website && !data.website.startsWith('http://') && !data.website.startsWith('https://')) {
+          data.website = `http://${data.website}`;
+        }
+        return data;
+      } catch (error) {
+        console.error("Failed to fetch company information:", error);
+        return null;
+      }
+    },
+  });
+
+  React.useEffect(() => {
+    if (savedData) {
+      form.reset(savedData);
+    }
+  }, [savedData, form]);
+
 
   return (
     <div className="space-y-6">
@@ -248,6 +294,14 @@ export default function CompanyInformation() {
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
+                        {addressErrors.street && (
+                          <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>
+                              {addressErrors.street}
+                            </AlertDescription>
+                          </Alert>
+                        )}
                       </FormItem>
                     )}
                   />
@@ -261,6 +315,14 @@ export default function CompanyInformation() {
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
+                          {addressErrors.zipCode && (
+                            <Alert variant="destructive">
+                              <AlertCircle className="h-4 w-4" />
+                              <AlertDescription>
+                                {addressErrors.zipCode}
+                              </AlertDescription>
+                            </Alert>
+                          )}
                         </FormItem>
                       )}
                     />
@@ -273,6 +335,14 @@ export default function CompanyInformation() {
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
+                          {addressErrors.city && (
+                            <Alert variant="destructive">
+                              <AlertCircle className="h-4 w-4" />
+                              <AlertDescription>
+                                {addressErrors.city}
+                              </AlertDescription>
+                            </Alert>
+                          )}
                         </FormItem>
                       )}
                     />
@@ -286,6 +356,14 @@ export default function CompanyInformation() {
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
+                        {addressErrors.country && (
+                          <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>
+                              {addressErrors.country}
+                            </AlertDescription>
+                          </Alert>
+                        )}
                       </FormItem>
                     )}
                   />
