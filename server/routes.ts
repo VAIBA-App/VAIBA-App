@@ -669,13 +669,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Logo not found" });
       }
 
-      // Convert hex-escaped string back to buffer and then to base64
-      const data = asset.data
-        .replace(/\\x([0-9a-fA-F]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
-        .replace(/[\n\r]/g, '');
+      // Decode hex-escaped data to binary, then convert to base64
+      const binaryData = Buffer.from(asset.data.slice(2), 'hex'); // Remove \x prefix and convert hex to binary
+      const base64Data = binaryData.toString('base64');
 
-      console.log('Sending logo data, length:', data.length);
-      res.json({ data });
+      console.log('Asset ID:', asset.id);
+      console.log('Mime Type:', asset.mime_type);
+      console.log('Data length:', base64Data.length);
+      res.json({ data: base64Data });
     } catch (error) {
       console.error('Error fetching logo:', error);
       res.status(500).json({ message: "Error loading logo" });

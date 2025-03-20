@@ -45,19 +45,32 @@ export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [logoData, setLogoData] = useState<string | null>(null);
+  const [logoError, setLogoError] = useState<string | null>(null);
   const { t } = useTranslation();
   const { logoutMutation } = useAuth();
 
   useEffect(() => {
-    fetch('/api/assets/logo-base64')
-      .then(res => res.json())
-      .then(data => {
+    const fetchLogo = async () => {
+      try {
+        const response = await fetch('/api/assets/logo-base64');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        if (!data || typeof data.data !== 'string') {
+          throw new Error('Invalid logo data received');
+        }
         console.log('Received logo data length:', data.data.length);
         setLogoData(data.data);
-      })
-      .catch(error => {
+        setLogoError(null);
+      } catch (error) {
         console.error('Error loading logo:', error);
-      });
+        setLogoError(error instanceof Error ? error.message : 'Failed to load logo');
+        setLogoData(null);
+      }
+    };
+
+    fetchLogo();
   }, []);
 
   const toggleExpand = (href: string) => {
@@ -241,7 +254,11 @@ export function Sidebar() {
     >
       <div className="flex h-16 items-center justify-between px-3">
         <div className="flex-shrink-0">
-          {logoData ? (
+          {logoError ? (
+            <div className="h-8 w-8 bg-red-100 flex items-center justify-center rounded">
+              <span className="text-xs text-red-500">!</span>
+            </div>
+          ) : logoData ? (
             <img
               src={`data:image/png;base64,${logoData}`}
               alt="VAIBA Logo"
@@ -256,6 +273,7 @@ export function Sidebar() {
                 const img = e.target as HTMLImageElement;
                 console.log('Failed src length:', img.src.length);
                 console.log('Failed src preview:', img.src.substring(0, 100));
+                setLogoError('Failed to render logo');
               }}
             />
           ) : (
