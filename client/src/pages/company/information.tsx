@@ -127,25 +127,35 @@ export default function CompanyInformation() {
         description: "Die Unternehmensinformationen wurden gespeichert.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Mutation error:", error);
+      let errorMessage = "Ein Fehler ist aufgetreten.";
+      if (error.response && error.response.status) {
+        switch (error.response.status) {
+          case 400:
+            errorMessage = "Ungültige Daten. Bitte überprüfen Sie Ihre Eingaben.";
+            break;
+          case 500:
+            errorMessage = "Ein interner Serverfehler ist aufgetreten.";
+            break;
+          default:
+            errorMessage = `Fehlercode: ${error.response.status}. Bitte versuchen Sie es später erneut.`;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
       toast({
-        title: "Information",
-        description: "Die Daten wurden gespeichert, auch wenn nicht alle Felder ausgefüllt wurden.",
-        variant: "default",
+        title: "Fehler",
+        description: errorMessage,
+        variant: "destructive",
       });
     },
   });
 
   const onSubmit = (data: CompanyInformation) => {
-    try {
-      saveCompanyInfo.mutate(data);
-    } catch (error) {
-      console.error("Submit error:", error);
-    }
+    saveCompanyInfo.mutate(data);
   };
 
-  // Rest of the component remains the same
   return (
     <div className="space-y-6">
       <h1 className="text-4xl font-bold mb-8">Unternehmensinformationen</h1>
