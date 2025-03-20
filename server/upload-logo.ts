@@ -22,7 +22,12 @@ async function uploadLogo() {
     await db.delete(Assets).where(eq(Assets.name, 'logo'));
 
     // Store raw binary data in database
-    console.log('Storing new logo in database...');
+    console.log('Storing new logo in database...', {
+      size: logoData.length,
+      type: typeof logoData,
+      is_buffer: Buffer.isBuffer(logoData)
+    });
+
     const [savedAsset] = await db.insert(Assets).values({
       name: 'logo',
       data: logoData,
@@ -50,7 +55,13 @@ async function uploadLogo() {
       throw new Error('Logo verification failed');
     }
 
-    console.log('Logo verified successfully!');
+    console.log('Logo verification successful:', {
+      id: verifiedAsset.id,
+      mime_type: verifiedAsset.mime_type,
+      data_length: verifiedAsset.data.length,
+      data_type: typeof verifiedAsset.data,
+      is_buffer: Buffer.isBuffer(verifiedAsset.data)
+    });
   } catch (error) {
     console.error('Error uploading logo:', error);
     throw error;
