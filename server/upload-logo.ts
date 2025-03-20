@@ -21,16 +21,13 @@ async function uploadLogo() {
     console.log('Removing existing logo...');
     await db.delete(Assets).where(eq(Assets.name, 'logo'));
 
-    // Store raw binary data in database
-    console.log('Storing new logo in database...', {
-      size: logoData.length,
-      type: typeof logoData,
-      is_buffer: Buffer.isBuffer(logoData)
-    });
+    // Convert binary data to base64 and store in database
+    console.log('Converting to base64 and storing in database...');
+    const base64Data = logoData.toString('base64');
 
     const [savedAsset] = await db.insert(Assets).values({
       name: 'logo',
-      data: logoData,
+      data: base64Data,
       mime_type: 'image/png',
       created_at: new Date(),
     }).returning();
@@ -39,28 +36,10 @@ async function uploadLogo() {
       throw new Error('Failed to save logo to database');
     }
 
-    console.log('Logo uploaded successfully!');
-    console.log('Asset ID:', savedAsset.id);
-    console.log('Mime Type:', savedAsset.mime_type);
-    console.log('Data length:', logoData.length);
-
-    // Verify the uploaded data
-    const [verifiedAsset] = await db
-      .select()
-      .from(Assets)
-      .where(eq(Assets.id, savedAsset.id))
-      .limit(1);
-
-    if (!verifiedAsset || !verifiedAsset.data) {
-      throw new Error('Logo verification failed');
-    }
-
-    console.log('Logo verification successful:', {
-      id: verifiedAsset.id,
-      mime_type: verifiedAsset.mime_type,
-      data_length: verifiedAsset.data.length,
-      data_type: typeof verifiedAsset.data,
-      is_buffer: Buffer.isBuffer(verifiedAsset.data)
+    console.log('Logo uploaded successfully:', {
+      id: savedAsset.id,
+      mime_type: savedAsset.mime_type,
+      data_length: base64Data.length
     });
   } catch (error) {
     console.error('Error uploading logo:', error);

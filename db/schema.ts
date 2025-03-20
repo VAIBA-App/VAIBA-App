@@ -198,7 +198,7 @@ export const selectAccountSchema = createSelectSchema(accounts);
 export const selectSessionSchema = createSelectSchema(sessions);
 export const selectVerificationTokenSchema = createSelectSchema(verificationTokens);
 
-// Add this after the other table definitions
+// Business Information table
 export const Business_Information = pgTable("Business_Information", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }),
@@ -217,23 +217,23 @@ export const Business_Information = pgTable("Business_Information", {
   created_at: timestamp("created_at").defaultNow(),
 });
 
-// Add these types and schemas
+// Business Information types and schemas
 export type BusinessInformation = typeof Business_Information.$inferSelect;
 export type InsertBusinessInformation = typeof Business_Information.$inferInsert;
 
 export const insertBusinessInformationSchema = createInsertSchema(Business_Information);
 export const selectBusinessInformationSchema = createSelectSchema(Business_Information);
 
-// Add this after the other table definitions
+// Assets table - using text for binary data storage
 export const Assets = pgTable("assets", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
-  data: text("data").notNull(),
+  data: text("data").notNull(),  // Store base64 encoded data as text
   mime_type: varchar("mime_type", { length: 255 }).notNull(),
   created_at: timestamp("created_at").defaultNow(),
 });
 
-// Add these types and schemas
+// Assets types and schemas
 export type Asset = typeof Assets.$inferSelect;
 export type InsertAsset = typeof Assets.$inferInsert;
 

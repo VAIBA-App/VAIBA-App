@@ -662,50 +662,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Fetching logo from database...');
 
-      const assets = await db
+      const [asset] = await db
         .select()
         .from(Assets)
-        .where(eq(Assets.name, 'logo'));
+        .where(eq(Assets.name, 'logo'))
+        .orderBy(desc(Assets.created_at))
+        .limit(1);
 
-      console.log('Query results:', {
-        count: assets.length,
-        ids: assets.map(a => a.id)
-      });
-
-      if (!assets.length) {
+      if (!asset) {
         console.error('Logo not found in database');
         return res.status(404).json({ message: "Logo not found" });
       }
-
-      const asset = assets[0];
 
       if (!asset.data) {
         console.error('Logo data is null');
         return res.status(404).json({ message: "Logo data is missing" });
       }
 
-      // Log raw data details
+      // Log found asset details
       console.log('Found asset:', {
         id: asset.id,
         name: asset.name,
         mime_type: asset.mime_type,
-        data_length: asset.data.length,
-        data_type: typeof asset.data,
-        is_buffer: Buffer.isBuffer(asset.data)
-      });
-
-      const base64Data = asset.data.toString('base64');
-
-      console.log('Base64 conversion complete:', {
-        base64Length: base64Data.length,
-        base64Preview: base64Data.substring(0, 50) + '...'
+        data_length: asset.data.length
       });
 
       // Set cache headers
       res.setHeader('Cache-Control', 'public, must-revalidate, max-age=31536000');
       res.setHeader('Content-Type', 'application/json');
 
-      res.json({ data: base64Data });
+      res.json({ data: asset.data });
     } catch (error) {
       console.error('Error fetching logo:', error);
       res.status(500).json({ message: "Error loading logo" });
