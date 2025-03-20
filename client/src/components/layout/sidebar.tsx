@@ -73,6 +73,11 @@ export function Sidebar() {
       icon: Building2,
       subItems: [
         {
+          title: "Informationen",
+          href: "/company/information",
+          icon: Building2,
+        },
+        {
           title: "Portfolio",
           href: "/company/portfolio",
           icon: Briefcase,
