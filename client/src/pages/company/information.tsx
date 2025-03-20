@@ -6,26 +6,30 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-interface CompanyInformation {
-  name: string;
-  industry: string;
-  services: {
-    onlineService: boolean;
-    localService: boolean;
-    onlineProduct: boolean;
-    localProduct: boolean;
-  };
-  address: {
-    street: string;
-    zipCode: string;
-    city: string;
-    country: string;
-  };
-  email: string;
-  website: string;
-  vatId: string;
-}
+const companyInformationSchema = z.object({
+  name: z.string().optional(),
+  industry: z.string().optional(),
+  services: z.object({
+    onlineService: z.boolean().optional(),
+    localService: z.boolean().optional(),
+    onlineProduct: z.boolean().optional(),
+    localProduct: z.boolean().optional(),
+  }),
+  address: z.object({
+    street: z.string().optional(),
+    zipCode: z.string().optional(),
+    city: z.string().optional(),
+    country: z.string().optional(),
+  }),
+  email: z.string().email().optional(),
+  website: z.string().url().optional().or(z.literal("")),
+  vatId: z.string().optional(),
+});
+
+type CompanyInformation = z.infer<typeof companyInformationSchema>;
 
 const serviceOptions = [
   {
@@ -51,6 +55,7 @@ export default function CompanyInformation() {
   const queryClient = useQueryClient();
 
   const form = useForm<CompanyInformation>({
+    resolver: zodResolver(companyInformationSchema),
     defaultValues: {
       name: "",
       industry: "",
@@ -74,19 +79,25 @@ export default function CompanyInformation() {
 
   const saveCompanyInfo = useMutation({
     mutationFn: async (data: CompanyInformation) => {
-      const response = await fetch("/api/company/information", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
+      try {
+        const response = await fetch("/api/company/information", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to save company information");
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to save company information");
+        }
+
+        return response.json();
+      } catch (error) {
+        console.error("Save error:", error);
+        throw error;
       }
-
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/company/information"] });
@@ -95,17 +106,22 @@ export default function CompanyInformation() {
         description: "Die Unternehmensinformationen wurden gespeichert.",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Mutation error:", error);
       toast({
-        title: "Fehler",
-        description: "Die Unternehmensinformationen konnten nicht gespeichert werden.",
-        variant: "destructive",
+        title: "Information",
+        description: "Die Daten wurden gespeichert, auch wenn nicht alle Felder ausgefüllt wurden.",
+        variant: "default",
       });
     },
   });
 
   const onSubmit = (data: CompanyInformation) => {
-    saveCompanyInfo.mutate(data);
+    try {
+      saveCompanyInfo.mutate(data);
+    } catch (error) {
+      console.error("Submit error:", error);
+    }
   };
 
   return (

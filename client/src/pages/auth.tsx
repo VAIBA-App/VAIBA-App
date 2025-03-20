@@ -11,6 +11,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Mail, Key, Activity } from "lucide-react";
 import { SiGoogle } from "react-icons/si";
+import { Facebook } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Bitte geben Sie eine gültige E-Mail-Adresse ein"),
@@ -221,9 +222,7 @@ export default function AuthPage() {
                 Google
               </Button>
               <Button variant="outline" className="w-full" onClick={() => window.location.href = "/api/auth/facebook"}>
-                <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 0c6.627 0 12 5.373 12 12s-5.373 12-12 12S0 18.627 0 12 5.373 0 12 0zm3.193 7.012h-1.965c-.322 0-.641.313-.641.735v1.495h2.604v2.033h-2.604v6.082h-2.189v-6.082H8.769v-2.033h1.629V7.898c0-1.528 1.06-2.898 2.573-2.898h2.222v2.012z"/>
-                </svg>
+                <Facebook className="mr-2 h-4 w-4" />
                 Facebook
               </Button>
             </div>

@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import {
+  UserPlus, 
   LayoutDashboard,
   Users,
   PhoneCall,
@@ -28,6 +29,7 @@ import {
   Phone,
   Sparkles,
   Award,
+  BadgeInfo,
   LogOut,
   Building2, // Icon für Firma
   Briefcase, // Icon für Portfolio
@@ -75,7 +77,7 @@ export function Sidebar() {
         {
           title: "Informationen",
           href: "/company/information",
-          icon: Building2,
+          icon: BadgeInfo,
         },
         {
           title: "Portfolio",
@@ -158,7 +160,7 @@ export function Sidebar() {
     {
       title: t("assistant"),
       href: "/assistant",
-      icon: User,
+      icon: UserPlus,
     },
     {
       title: t("voice"),
