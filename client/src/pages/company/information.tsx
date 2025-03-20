@@ -5,10 +5,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/
 import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import React from 'react';
 
+// Schema definition remains the same
 const companyInformationSchema = z.object({
   name: z.string().optional(),
   industry: z.string().optional(),
@@ -77,6 +79,25 @@ export default function CompanyInformation() {
     },
   });
 
+  // Query to fetch saved company information
+  const { data: savedData } = useQuery({
+    queryKey: ['companyInformation'],
+    queryFn: async () => {
+      const response = await fetch("/api/company/information");
+      if (!response.ok) {
+        return null;
+      }
+      return response.json();
+    },
+  });
+
+  // Update form when saved data is loaded
+  React.useEffect(() => {
+    if (savedData) {
+      form.reset(savedData);
+    }
+  }, [savedData, form]);
+
   const saveCompanyInfo = useMutation({
     mutationFn: async (data: CompanyInformation) => {
       try {
@@ -100,7 +121,7 @@ export default function CompanyInformation() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/company/information"] });
+      queryClient.invalidateQueries({ queryKey: ['companyInformation'] });
       toast({
         title: "Erfolgreich gespeichert",
         description: "Die Unternehmensinformationen wurden gespeichert.",
@@ -124,6 +145,7 @@ export default function CompanyInformation() {
     }
   };
 
+  // Rest of the component remains the same
   return (
     <div className="space-y-6">
       <h1 className="text-4xl font-bold mb-8">Unternehmensinformationen</h1>
