@@ -231,6 +231,7 @@ export function Sidebar() {
         <img
           src="/api/assets/logo"
           alt="VAIBA Logo"
+          loading="eager"
           className={cn(
             "h-8 w-auto transition-none",
             isCollapsed ? "w-0" : "w-auto"

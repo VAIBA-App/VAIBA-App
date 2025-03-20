@@ -636,6 +636,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set correct cache headers to prevent blinking
       res.setHeader('Cache-Control', 'public, max-age=31536000');
       res.setHeader('Content-Type', asset.mime_type);
+      res.setHeader('ETag', `"${asset.id}"`);
+
+      // Check if the browser already has the latest version
+      const ifNoneMatch = req.headers['if-none-match'];
+      if (ifNoneMatch === `"${asset.id}"`) {
+        return res.status(304).end();
+      }
+
       // Send the base64 decoded image data
       res.send(Buffer.from(asset.data, 'base64'));
     } catch (error) {

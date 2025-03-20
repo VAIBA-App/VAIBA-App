@@ -1,6 +1,8 @@
 import { readFileSync } from 'fs';
 import { db } from '@db';
 import { Assets } from '@db/schema';
+import { eq } from 'drizzle-orm'; // Assuming 'drizzle-orm' or similar ORM is used
+
 
 async function uploadLogo() {
   try {
@@ -8,6 +10,9 @@ async function uploadLogo() {
     const logoPath = './attached_assets/FB-App-OhneBackground.png';
     const logoData = readFileSync(logoPath);
     const base64Data = logoData.toString('base64');
+
+    // Delete existing logo if exists
+    await db.delete(Assets).where(eq(Assets.name, 'logo'));
 
     // Store in database
     await db.insert(Assets).values({
