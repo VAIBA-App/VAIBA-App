@@ -3,7 +3,6 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
-import { Image } from "@/components/ui/image";
 import {
   UserPlus,
   LayoutDashboard,
@@ -52,8 +51,13 @@ export function Sidebar() {
   useEffect(() => {
     fetch('/api/assets/logo-base64')
       .then(res => res.json())
-      .then(data => setLogoData(data.data))
-      .catch(error => console.error('Error loading logo:', error));
+      .then(data => {
+        console.log('Received logo data length:', data.data.length);
+        setLogoData(data.data);
+      })
+      .catch(error => {
+        console.error('Error loading logo:', error);
+      });
   }, []);
 
   const toggleExpand = (href: string) => {
@@ -247,6 +251,12 @@ export function Sidebar() {
                 "h-8",
                 isCollapsed ? "w-0" : "w-auto"
               )}
+              onError={(e) => {
+                console.error('Logo rendering error:', e);
+                const img = e.target as HTMLImageElement;
+                console.log('Failed src length:', img.src.length);
+                console.log('Failed src preview:', img.src.substring(0, 100));
+              }}
             />
           ) : (
             <div className="h-8 w-8 bg-muted animate-pulse rounded" />

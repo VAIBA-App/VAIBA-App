@@ -13,8 +13,8 @@ async function uploadLogo() {
       throw new Error('Logo file is empty');
     }
 
-    // Convert to base64
-    const base64Data = logoData.toString('base64');
+    // Convert to base64 without any additional encoding
+    const base64Data = Buffer.from(logoData).toString('base64');
 
     // Delete existing logo if exists
     await db.delete(Assets).where(eq(Assets.name, 'logo'));
@@ -34,6 +34,7 @@ async function uploadLogo() {
     console.log('Logo uploaded successfully!');
     console.log('Asset ID:', savedAsset.id);
     console.log('Mime Type:', savedAsset.mime_type);
+    console.log('Data length:', base64Data.length);
   } catch (error) {
     console.error('Error uploading logo:', error);
     throw error;
