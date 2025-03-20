@@ -633,22 +633,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Asset not found" });
       }
 
-      // Set correct cache headers to prevent blinking
-      res.setHeader('Cache-Control', 'public, max-age=31536000');
+      // Set proper cache-control headers
+      res.setHeader('Cache-Control', 'public, must-revalidate, max-age=31536000');
       res.setHeader('Content-Type', asset.mime_type);
       res.setHeader('ETag', `"${asset.id}"`);
+      res.setHeader('Last-Modified', asset.created_at.toUTCString());
 
       // Check if the browser already has the latest version
       const ifNoneMatch = req.headers['if-none-match'];
-      if (ifNoneMatch === `"${asset.id}"`) {
+      const ifModifiedSince = req.headers['if-modified-since'];
+
+      if (ifNoneMatch === `"${asset.id}"` ||
+          (ifModifiedSince && new Date(ifModifiedSince) >= asset.created_at)) {
         return res.status(304).end();
       }
 
-      // Send the base64 decoded image data
-      res.send(Buffer.from(asset.data, 'base64'));
+      // Send the base64 decoded binary data
+      const imageBuffer = Buffer.from(asset.data, 'base64');
+      res.send(imageBuffer);
     } catch (error) {
       console.error('Error fetching asset:', error);
       res.status(500).json({ message: "Error loading asset" });
+    }
+  });
+
+  // Get logo as base64 endpoint
+  app.get("/api/assets/logo-base64", async (_req, res) => {
+    try {
+      const asset = await db.query.Assets.findFirst({
+        where: (assets) => eq(assets.name, 'logo'),
+        orderBy: (assets) => [desc(assets.created_at)]
+      });
+
+      if (!asset) {
+        return res.status(404).json({ message: "Logo not found" });
+      }
+
+      res.json({ data: asset.data });
+    } catch (error) {
+      console.error('Error fetching logo:', error);
+      res.status(500).json({ message: "Error loading logo" });
     }
   });
 

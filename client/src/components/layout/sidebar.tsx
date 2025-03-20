@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -38,15 +39,22 @@ import {
   TrendingUp,
   Receipt,
 } from "lucide-react";
-import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 
 export function Sidebar() {
   const [location] = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [logoData, setLogoData] = useState<string | null>(null);
   const { t } = useTranslation();
   const { logoutMutation } = useAuth();
+
+  useEffect(() => {
+    fetch('/api/assets/logo-base64')
+      .then(res => res.json())
+      .then(data => setLogoData(data.data))
+      .catch(error => console.error('Error loading logo:', error));
+  }, []);
 
   const toggleExpand = (href: string) => {
     setExpandedItems(prev =>
@@ -228,19 +236,22 @@ export function Sidebar() {
       )}
     >
       <div className="flex h-16 items-center justify-between px-3">
-        <img
-          src="/api/assets/logo"
-          alt="VAIBA Logo"
-          loading="eager"
-          className={cn(
-            "h-8 w-auto transition-none",
-            isCollapsed ? "w-0" : "w-auto"
+        <div className="flex-shrink-0">
+          {logoData ? (
+            <img
+              src={`data:image/png;base64,${logoData}`}
+              alt="VAIBA Logo"
+              width={32}
+              height={32}
+              className={cn(
+                "h-8",
+                isCollapsed ? "w-0" : "w-auto"
+              )}
+            />
+          ) : (
+            <div className="h-8 w-8 bg-muted animate-pulse rounded" />
           )}
-          onError={(e) => {
-            console.error('Error loading logo:', e);
-            e.currentTarget.src = '/default-logo.png';
-          }}
-        />
+        </div>
         <Button
           variant="ghost"
           size="sm"
