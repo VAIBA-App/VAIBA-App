@@ -49,7 +49,7 @@ export function Sidebar() {
   const { t } = useTranslation();
   const { logoutMutation } = useAuth();
 
-  useEffect(() => {
+useEffect(() => {
     const fetchLogo = async () => {
       try {
         console.log('Fetching logo...');

@@ -662,34 +662,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Fetching logo from database...');
 
-      const asset = await db.query.Assets.findFirst({
-        where: eq(Assets.name, 'logo'),
-        orderBy: [desc(Assets.created_at)]
-      });
+      // Use direct select query
+      const [asset] = await db
+        .select()
+        .from(Assets)
+        .where(eq(Assets.name, 'logo'))
+        .orderBy(desc(Assets.created_at))
+        .limit(1);
 
       if (!asset) {
         console.error('Logo not found in database');
         return res.status(404).json({ message: "Logo not found" });
       }
 
-      // Log asset details
-      console.log('Found asset:', {
+      if (!asset.data) {
+        console.error('Logo data is null');
+        return res.status(404).json({ message: "Logo data is missing" });
+      }
+
+      // Convert binary data to base64
+      const base64Data = Buffer.from(asset.data).toString('base64');
+
+      // Log details for debugging
+      console.log('Processing logo:', {
         id: asset.id,
         name: asset.name,
         mime_type: asset.mime_type,
-        created_at: asset.created_at,
-        data_length: asset.data?.length || 0
-      });
-
-      // Decode hex-escaped data to binary, then convert to base64
-      const binaryData = Buffer.from(asset.data.slice(2), 'hex'); // Remove \x prefix and convert hex to binary
-      const base64Data = binaryData.toString('base64');
-
-      console.log('Processed logo data:', {
-        originalLength: asset.data.length,
-        binaryLength: binaryData.length,
+        dataLength: asset.data.length,
         base64Length: base64Data.length
       });
+
+      // Set cache headers
+      res.setHeader('Cache-Control', 'public, must-revalidate, max-age=31536000');
+      res.setHeader('Content-Type', 'application/json');
 
       res.json({ data: base64Data });
     } catch (error) {
