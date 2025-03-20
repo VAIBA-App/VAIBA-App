@@ -239,6 +239,10 @@ export function Sidebar() {
               "h-8 w-auto",
               isCollapsed ? "w-0" : "w-auto"
             )}
+            onError={(e) => {
+              console.error('Error loading logo:', e);
+              e.currentTarget.src = '/default-logo.png'; // Fallback image
+            }}
           />
         </Link>
         <Button
