@@ -679,7 +679,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Logo data is missing" });
       }
 
-      // Log found asset details
+      // Log found asset details for debugging
       console.log('Found asset:', {
         id: asset.id,
         name: asset.name,
@@ -688,17 +688,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data_preview: asset.data.substring(0, 50) + '...'
       });
 
-      // Set proper headers
+      // Send the response with proper data URL format
       res.setHeader('Cache-Control', 'public, must-revalidate, max-age=31536000');
       res.setHeader('Content-Type', 'application/json');
-
-      // Send the response with proper data URL format
       res.json({
         data: `data:${asset.mime_type};base64,${asset.data}`
       });
     } catch (error) {
       console.error('Error fetching logo:', error);
-      res.status(500).json({ message: "Error loading logo" });
+      res.status(500).json({ 
+        message: "Error loading logo",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
