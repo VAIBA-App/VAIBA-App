@@ -666,6 +666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (!asset) {
+        console.error('Logo not found in database');
         return res.status(404).json({ message: "Logo not found" });
       }
 
