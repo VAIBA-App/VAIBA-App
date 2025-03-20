@@ -10,7 +10,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import React from 'react';
 
-// Schema definition remains the same
 const companyInformationSchema = z.object({
   name: z.string().optional(),
   industry: z.string().optional(),
@@ -83,11 +82,17 @@ export default function CompanyInformation() {
   const { data: savedData } = useQuery({
     queryKey: ['companyInformation'],
     queryFn: async () => {
-      const response = await fetch("/api/company/information");
-      if (!response.ok) {
+      try {
+        const response = await fetch("/api/company/information");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error("Failed to fetch company information:", error);
         return null;
       }
-      return response.json();
     },
   });
 
@@ -100,24 +105,40 @@ export default function CompanyInformation() {
 
   const saveCompanyInfo = useMutation({
     mutationFn: async (data: CompanyInformation) => {
+      const response = await fetch("/api/company/information", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: data.name,
+          industry: data.industry,
+          online_service: data.services.onlineService,
+          local_service: data.services.localService,
+          online_product: data.services.onlineProduct,
+          local_product: data.services.localProduct,
+          street: data.address.street,
+          zip_code: data.address.zipCode,
+          city: data.address.city,
+          country: data.address.country,
+          email: data.email,
+          website: data.website,
+          vat_id: data.vatId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Server response:", errorText);
+        throw new Error(`Failed to save company information: ${response.statusText}`);
+      }
+
       try {
-        const response = await fetch("/api/company/information", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to save company information");
-        }
-
-        return response.json();
+        return await response.json();
       } catch (error) {
-        console.error("Save error:", error);
-        throw error;
+        console.error("Failed to parse response:", error);
+        // If we can't parse the response as JSON, return a simple success object
+        return { success: true };
       }
     },
     onSuccess: () => {
@@ -128,25 +149,10 @@ export default function CompanyInformation() {
       });
     },
     onError: (error: any) => {
-      console.error("Mutation error:", error);
-      let errorMessage = "Ein Fehler ist aufgetreten.";
-      if (error.response && error.response.status) {
-        switch (error.response.status) {
-          case 400:
-            errorMessage = "Ungültige Daten. Bitte überprüfen Sie Ihre Eingaben.";
-            break;
-          case 500:
-            errorMessage = "Ein interner Serverfehler ist aufgetreten.";
-            break;
-          default:
-            errorMessage = `Fehlercode: ${error.response.status}. Bitte versuchen Sie es später erneut.`;
-        }
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
+      console.error("Save error:", error);
       toast({
         title: "Fehler",
-        description: errorMessage,
+        description: "Fehler beim Speichern der Unternehmensinformationen. Bitte versuchen Sie es später erneut.",
         variant: "destructive",
       });
     },
