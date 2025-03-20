@@ -12,7 +12,7 @@ import "./i18n";
 // Pages
 import Dashboard from "@/pages/dashboard";
 import CustomerSearch from "@/pages/customer-search";
-import CustomerList from "@/pages/customer-list";  // Updated import
+import CustomerList from "@/pages/customer-list";
 import Profile from "@/pages/profile";
 import Calls from "@/pages/calls";
 import AutoCalls from "@/pages/auto-calls";
@@ -31,12 +31,14 @@ import HelpSettings from "@/pages/settings/help";
 import Simulator from "@/pages/simulator";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth";
+import CompanyInformation from "@/pages/company/information"; // Import the new component
 
 // Company Pages
 import Portfolio from "@/pages/company/portfolio";
 import Pricing from "@/pages/company/pricing";
 import Revenue from "@/pages/company/revenue";
 import Invoices from "@/pages/company/invoices";
+
 
 function App() {
   return (
@@ -58,9 +60,10 @@ function App() {
                       <Route path="/company/pricing" component={Pricing} />
                       <Route path="/company/revenue" component={Revenue} />
                       <Route path="/company/invoices" component={Invoices} />
+                      <Route path="/company/information" component={CompanyInformation} /> {/* New route */}
 
                       <Route path="/customer-search" component={CustomerSearch} />
-                      <Route path="/customer-list" component={CustomerList} />  {/* Updated route */}
+                      <Route path="/customer-list" component={CustomerList} />
                       <Route path="/profile" component={Profile} />
                       <Route path="/calls" component={Calls} />
                       <Route path="/auto-calls" component={AutoCalls} />
