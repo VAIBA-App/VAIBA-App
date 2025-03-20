@@ -49,11 +49,18 @@ export function Sidebar() {
   const { t } = useTranslation();
   const { logoutMutation } = useAuth();
 
-useEffect(() => {
+  useEffect(() => {
     const fetchLogo = async () => {
       try {
         console.log('Fetching logo...');
         const response = await fetch('/api/assets/logo-base64');
+
+        // Log the raw response status and headers
+        console.log('Logo Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -266,11 +273,11 @@ useEffect(() => {
         <div className="flex-shrink-0">
           {logoError ? (
             <div className="h-8 w-8 bg-red-100 flex items-center justify-center rounded">
-              <span className="text-xs text-red-500">!</span>
+              <span className="text-xs text-red-500" title={logoError}>!</span>
             </div>
           ) : logoData ? (
             <img
-              src={logoData} // Now using the complete data URL
+              src={logoData} // Using complete data URL
               alt="VAIBA Logo"
               width={32}
               height={32}
