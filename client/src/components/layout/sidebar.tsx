@@ -228,23 +228,18 @@ export function Sidebar() {
       )}
     >
       <div className="flex h-16 items-center justify-between px-3">
-        <Link href="/" className={cn(
-          "transition-opacity duration-200 flex items-center",
-          isCollapsed ? "opacity-0 w-0" : "opacity-100"
-        )}>
-          <img
-            src="/api/assets/logo"
-            alt="VAIBA Logo"
-            className={cn(
-              "h-8 w-auto",
-              isCollapsed ? "w-0" : "w-auto"
-            )}
-            onError={(e) => {
-              console.error('Error loading logo:', e);
-              e.currentTarget.src = '/default-logo.png'; // Fallback image
-            }}
-          />
-        </Link>
+        <img
+          src="/api/assets/logo"
+          alt="VAIBA Logo"
+          className={cn(
+            "h-8 w-auto transition-none",
+            isCollapsed ? "w-0" : "w-auto"
+          )}
+          onError={(e) => {
+            console.error('Error loading logo:', e);
+            e.currentTarget.src = '/default-logo.png';
+          }}
+        />
         <Button
           variant="ghost"
           size="sm"

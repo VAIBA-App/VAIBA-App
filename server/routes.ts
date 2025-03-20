@@ -633,7 +633,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Asset not found" });
       }
 
+      // Set correct cache headers to prevent blinking
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
       res.setHeader('Content-Type', asset.mime_type);
+      // Send the base64 decoded image data
       res.send(Buffer.from(asset.data, 'base64'));
     } catch (error) {
       console.error('Error fetching asset:', error);
