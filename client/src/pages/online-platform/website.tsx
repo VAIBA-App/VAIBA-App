@@ -12,6 +12,7 @@ import {
   Trash2, ExternalLink, AlertTriangle
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { websiteDesignApi } from "@/lib/api";
 import { PencilRuler } from 'lucide-react';
 import {
   AlertDialog,
@@ -39,6 +40,7 @@ export default function WebsiteGenerator() {
   const [selectedDesign, setSelectedDesign] = useState<WebsiteDesign | null>(null);
   const [designToDelete, setDesignToDelete] = useState<WebsiteDesign | null>(null);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [editedCode, setEditedCode] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();

@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
+import { sendContactFormEmail } from "./lib/email";
 import {
   profiles,
   users,
