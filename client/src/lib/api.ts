@@ -185,6 +185,26 @@ export const websiteDesignApi = {
     fetchApi(`/website-designs/${id}`, {
       method: 'DELETE',
     }),
+  // Neue Funktion für Bild-Uploads
+  uploadImage: async (file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    // Für FormData können wir nicht den normalen fetchApi verwenden,
+    // da wir keinen Content-Type setzen dürfen (wird vom Browser automatisch gesetzt)
+    const response = await fetch('/api/website/upload-image', {
+      method: 'POST',
+      body: formData,
+      // Keine Headers, damit der Browser den boundary-Parameter im Content-Type selbst setzen kann
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Fehler beim Hochladen des Bildes');
+    }
+    
+    return response.json();
+  },
 };
 
 export type ChatMessage = {

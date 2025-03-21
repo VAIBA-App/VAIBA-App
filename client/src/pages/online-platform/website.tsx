@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, ChangeEvent } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
 import { 
   Loader2, Globe, Code2, Eye, RefreshCw, Save, 
-  Trash2, ExternalLink, AlertTriangle
+  Trash2, ExternalLink, AlertTriangle, ImageIcon,
+  UploadCloud
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { websiteDesignApi } from "@/lib/api";
@@ -41,7 +43,10 @@ export default function WebsiteGenerator() {
   const [designToDelete, setDesignToDelete] = useState<WebsiteDesign | null>(null);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [editedCode, setEditedCode] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadedImage, setUploadedImage] = useState<{url: string, originalName: string} | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -335,6 +340,7 @@ export default function WebsiteGenerator() {
                   <TabsList className="w-full">
                     <TabsTrigger value="preview" className="flex-1"><Eye className="mr-2 h-4 w-4" /> Vorschau</TabsTrigger>
                     <TabsTrigger value="code" className="flex-1"><Code2 className="mr-2 h-4 w-4" /> Code</TabsTrigger>
+                    <TabsTrigger value="images" className="flex-1"><ImageIcon className="mr-2 h-4 w-4" /> Bilder</TabsTrigger>
                   </TabsList>
                   <TabsContent value="preview" className="border rounded-b-md">
                     <div className="h-80 overflow-hidden border rounded bg-white">
