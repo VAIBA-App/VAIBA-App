@@ -16,7 +16,7 @@ import {
 import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
 import { generateChatResponse, generateWebsitePrompt } from "./lib/openai";
-import { sendVerificationEmail, verifyEmail } from './lib/email';
+import { sendVerificationEmail, verifyEmail, sendContactFormEmail } from './lib/email';
 import bcrypt from 'bcrypt';
 import { validateAddress } from './lib/address-validation';
 import axios from 'axios';
@@ -1071,7 +1071,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Website design not found" });
       }
 
-      res.status(204).end();
+      res.status(200).json({ message: "Website design successfully deleted" });
     } catch (error) {
       console.error('Error deleting website design:', error);
       res.status(500).json({

@@ -143,3 +143,96 @@ export async function verifyEmail(token: string): Promise<boolean> {
     return false;
   }
 }
+
+// HTML-Vorlage für Kontaktformulare
+const getContactFormEmailTemplate = (
+  name: string,
+  email: string,
+  subject: string,
+  message: string
+) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Neue Kontaktanfrage</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .message-box {
+      background-color: #f9f9f9;
+      border-left: 4px solid #007bff;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .field {
+      margin-bottom: 10px;
+    }
+    .field strong {
+      display: inline-block;
+      width: 100px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Neue Kontaktanfrage</h2>
+    <p>Sie haben eine neue Anfrage über Ihr Website-Kontaktformular erhalten:</p>
+    
+    <div class="field">
+      <strong>Name:</strong> ${name}
+    </div>
+    <div class="field">
+      <strong>E-Mail:</strong> ${email}
+    </div>
+    <div class="field">
+      <strong>Betreff:</strong> ${subject}
+    </div>
+    
+    <div class="message-box">
+      <p>${message.replace(/\n/g, '<br>')}</p>
+    </div>
+    
+    <p>Sie können direkt auf diese E-Mail antworten, um mit dem Absender in Kontakt zu treten.</p>
+    
+    <div class="footer">
+      <p>Diese Nachricht wurde über Ihr VAIBA-generiertes Website-Kontaktformular gesendet.</p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+// Funktion zum Senden von Kontaktformular-E-Mails
+export async function sendContactFormEmail(
+  recipientEmail: string,
+  senderName: string,
+  senderEmail: string,
+  subject: string,
+  message: string
+): Promise<boolean> {
+  try {
+    // E-Mail senden
+    await transporter.sendMail({
+      from: '"VAIBA Kontaktformular" <vaiba.app@gmail.com>',
+      to: recipientEmail,
+      replyTo: senderEmail,
+      subject: `Neue Kontaktanfrage: ${subject}`,
+      html: getContactFormEmailTemplate(senderName, senderEmail, subject, message),
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Fehler beim Senden der Kontaktformular-E-Mail:', error);
+    return false;
+  }
+}
