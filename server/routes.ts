@@ -809,67 +809,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log('Generating website code using OpenAI API for description:', result.data.designDescription);
         
-        // Erweiterte Prompt-Erstellung mit Unternehmensdaten
-        let prompt = '';
-        
-        if (companyInfo) {
-          // Bestimme die verfügbaren Services als String
-          const services = [];
-          if (companyInfo.online_service) services.push('Online-Dienstleistungen');
-          if (companyInfo.local_service) services.push('Lokale Dienstleistungen');
-          if (companyInfo.online_product) services.push('Online-Produkte');
-          if (companyInfo.local_product) services.push('Lokale Produkte');
-          
-          // Erstellen des angereicherten Prompts
-          prompt = `
-Als erfahrener Webentwickler, erstelle bitte eine professionelle HTML/CSS-Website für das folgende Unternehmen:
-
-UNTERNEHMENSDATEN:
-- Name: ${companyInfo.name || 'Unbekannt'}
-- Branche: ${companyInfo.industry || 'Unbekannt'}
-- Angebotene Leistungen: ${services.length > 0 ? services.join(', ') : 'Diverse Leistungen'}
-- Website: ${companyInfo.website || 'N/A'}
-- E-Mail: ${companyInfo.email || 'kontakt@example.com'}
-- Adresse: ${companyInfo.street || ''}, ${companyInfo.zip_code || ''} ${companyInfo.city || ''}, ${companyInfo.country || ''}
-
-NUTZERBESCHREIBUNG:
-"${result.data.designDescription}"
-
-Befolge diese Richtlinien:
-1. Die Website sollte responsiv und modern aussehen
-2. Verwende nur inline CSS (kein externes CSS)
-3. Integriere die echten Unternehmensdaten in die Website (Name, Kontaktdaten, etc.)
-4. Füge Platzhalter für Bilder hinzu die zur Branche "${companyInfo.industry || 'Dienstleistung'}" passen
-5. Berücksichtige Farben, Layout und Struktur basierend auf der Nutzerbeschreibung
-6. Der Code sollte valides HTML5 und CSS sein
-7. Füge folgende interaktive Elemente ein (in Inline-JavaScript):
-   - Bilder-Slider für Produkte oder Dienstleistungen
-   - Einfache Scroll-Animationen
-   - Hover-Effekte für Buttons und Navigationselemente
-   - Dynamischer Textwechsel für Header-Überschriften
-8. Gib NUR den HTML-Code zurück, ohne Erklärungen oder Kommentare außerhalb des Codes
-
-Erstelle eine vollständige, funktionsfähige Website mit einer professionellen Struktur und gutem Design, die speziell auf die ${companyInfo.industry || 'angegebene'} Branche zugeschnitten ist.
-`;
-        } else {
-          // Standardprompt wenn keine Unternehmensdaten verfügbar sind
-          prompt = `
-Als erfahrener Webentwickler, erstelle bitte eine einfache aber professionelle HTML/CSS-Website basierend auf dieser Beschreibung:
-
-"${result.data.designDescription}"
-
-Befolge diese Richtlinien:
-1. Die Website sollte responsiv und modern aussehen
-2. Verwende nur inline CSS (kein externes CSS)
-3. Füge Platzhalter für Bilder hinzu (verwende keine externen Bildquellen)
-4. Berücksichtige Farben, Layout und Struktur basierend auf der Beschreibung
-5. Der Code sollte valides HTML5 und CSS sein
-6. Füge einfache JavaScript-Interaktionen wie Hover-Effekte und Bildslider hinzu
-7. Gib NUR den HTML-Code zurück, ohne Erklärungen oder Kommentare außerhalb des Codes
-
-Erstelle eine vollständige, funktionsfähige Website mit einer professionellen Struktur und gutem Design.
-`;
-        }
+        // Verwenden der zentralen Prompt-Generierungsfunktion
+        const prompt = generateWebsitePrompt(companyInfo, result.data.designDescription);
 
         const response = await openaiClient.chat.completions.create({
           model: "gpt-4o", // or gpt-3.5-turbo if gpt-4 is not available
@@ -1046,67 +987,8 @@ Erstelle eine vollständige, funktionsfähige Website mit einer professionellen 
 
           console.log('Generating updated website code using OpenAI API for description:', result.data.designDescription);
           
-          // Erweiterte Prompt-Erstellung mit Unternehmensdaten
-          let prompt = '';
-          
-          if (companyInfo) {
-            // Bestimme die verfügbaren Services als String
-            const services = [];
-            if (companyInfo.online_service) services.push('Online-Dienstleistungen');
-            if (companyInfo.local_service) services.push('Lokale Dienstleistungen');
-            if (companyInfo.online_product) services.push('Online-Produkte');
-            if (companyInfo.local_product) services.push('Lokale Produkte');
-            
-            // Erstellen des angereicherten Prompts
-            prompt = `
-Als erfahrener Webentwickler, erstelle bitte eine professionelle HTML/CSS-Website für das folgende Unternehmen:
-
-UNTERNEHMENSDATEN:
-- Name: ${companyInfo.name || 'Unbekannt'}
-- Branche: ${companyInfo.industry || 'Unbekannt'}
-- Angebotene Leistungen: ${services.length > 0 ? services.join(', ') : 'Diverse Leistungen'}
-- Website: ${companyInfo.website || 'N/A'}
-- E-Mail: ${companyInfo.email || 'kontakt@example.com'}
-- Adresse: ${companyInfo.street || ''}, ${companyInfo.zip_code || ''} ${companyInfo.city || ''}, ${companyInfo.country || ''}
-
-NUTZERBESCHREIBUNG:
-"${result.data.designDescription}"
-
-Befolge diese Richtlinien:
-1. Die Website sollte responsiv und modern aussehen
-2. Verwende nur inline CSS (kein externes CSS)
-3. Integriere die echten Unternehmensdaten in die Website (Name, Kontaktdaten, etc.)
-4. Füge Platzhalter für Bilder hinzu die zur Branche "${companyInfo.industry || 'Dienstleistung'}" passen
-5. Berücksichtige Farben, Layout und Struktur basierend auf der Nutzerbeschreibung
-6. Der Code sollte valides HTML5 und CSS sein
-7. Füge folgende interaktive Elemente ein (in Inline-JavaScript):
-   - Bilder-Slider für Produkte oder Dienstleistungen
-   - Einfache Scroll-Animationen
-   - Hover-Effekte für Buttons und Navigationselemente
-   - Dynamischer Textwechsel für Header-Überschriften
-8. Gib NUR den HTML-Code zurück, ohne Erklärungen oder Kommentare außerhalb des Codes
-
-Erstelle eine vollständige, funktionsfähige Website mit einer professionellen Struktur und gutem Design, die speziell auf die ${companyInfo.industry || 'angegebene'} Branche zugeschnitten ist.
-`;
-          } else {
-            // Standardprompt wenn keine Unternehmensdaten verfügbar sind
-            prompt = `
-Als erfahrener Webentwickler, erstelle bitte eine einfache aber professionelle HTML/CSS-Website basierend auf dieser Beschreibung:
-
-"${result.data.designDescription}"
-
-Befolge diese Richtlinien:
-1. Die Website sollte responsiv und modern aussehen
-2. Verwende nur inline CSS (kein externes CSS)
-3. Füge Platzhalter für Bilder hinzu (verwende keine externen Bildquellen)
-4. Berücksichtige Farben, Layout und Struktur basierend auf der Beschreibung
-5. Der Code sollte valides HTML5 und CSS sein
-6. Füge einfache JavaScript-Interaktionen wie Hover-Effekte und Bildslider hinzu
-7. Gib NUR den HTML-Code zurück, ohne Erklärungen oder Kommentare außerhalb des Codes
-
-Erstelle eine vollständige, funktionsfähige Website mit einer professionellen Struktur und gutem Design.
-`;
-          }
+          // Verwendung der zentralen Prompt-Generierungsfunktion
+          const prompt = generateWebsitePrompt(companyInfo, result.data.designDescription);
 
           const response = await openaiClient.chat.completions.create({
             model: "gpt-4o", // or gpt-3.5-turbo if gpt-4 is not available
