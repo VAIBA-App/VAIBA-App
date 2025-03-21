@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2, Globe, Code2, Eye, RefreshCw, Save } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { PencilRuler } from 'lucide-react';
 
 interface WebsiteDesign {
   id: number;
@@ -156,8 +157,7 @@ export default function WebsiteGenerator() {
 
   return (
     <div className="container mx-auto p-4 space-y-8">
-      <h1 className="text-3xl font-bold mb-6">Website/Shop erstellen</h1>
-      
+      <h1 className="text-3xl font-bold mb-6"><PencilRuler />Website erstellen </h1>       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="md:col-span-1">
           <CardHeader>

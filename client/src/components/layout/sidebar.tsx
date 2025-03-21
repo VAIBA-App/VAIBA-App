@@ -38,7 +38,7 @@ import {
   TrendingUp,
   Receipt,
   Globe,
-  Blocks,
+  PencilRuler
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -160,14 +160,14 @@ export function Sidebar() {
       ],
     },
     {
-      title: "Onlineplattform",
+      title: "Website",
       href: "/online-platform",
       icon: Globe,
       subItems: [
         {
-          title: "Website/Shop erstellen",
+          title: "Website erstellen",
           href: "/online-platform/website",
-          icon: Blocks,
+          icon: PencilRuler,
         }
       ],
     },
