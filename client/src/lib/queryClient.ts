@@ -17,6 +17,8 @@ export async function apiRequest(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  console.log(`API Request: ${method} ${endpoint}`, data);
+  
   const response = await fetch(endpoint, {
     method,
     headers,
@@ -33,14 +35,19 @@ export async function apiRequest(
     throw new Error(errorText);
   }
 
-  return response;
+  // Parse the response as JSON
+  const result = await response.json();
+  console.log(`API Response for ${method} ${endpoint}:`, result);
+  
+  return result;
 }
 
 export function getQueryFn(options?: { on401: "throw" | "returnNull" }) {
-  return async ({ queryKey }: { queryKey: string[] }) => {
+  return async (context: { queryKey: unknown }) => {
     try {
-      const res = await apiRequest("GET", queryKey[0]);
-      return res.json();
+      // apiRequest already returns JSON parsed data, so we just return it directly
+      const queryKey = context.queryKey as string[];
+      return await apiRequest("GET", queryKey[0]);
     } catch (error) {
       if (
         options?.on401 === "returnNull" &&
