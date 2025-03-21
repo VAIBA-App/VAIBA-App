@@ -1037,7 +1037,8 @@ Erstelle eine vollständige, funktionsfähige Website mit einer professionellen 
             console.log('Unternehmensinformationen für Update geladen:', {
               name: companyInfo.name,
               industry: companyInfo.industry,
-              services: companyInfo.services
+              online_service: companyInfo.online_service,
+              local_service: companyInfo.local_service
             });
           } catch (err) {
             console.error('Fehler beim Laden der Unternehmensinformationen:', err);
@@ -1051,10 +1052,10 @@ Erstelle eine vollständige, funktionsfähige Website mit einer professionellen 
           if (companyInfo) {
             // Bestimme die verfügbaren Services als String
             const services = [];
-            if (companyInfo.services?.onlineService) services.push('Online-Dienstleistungen');
-            if (companyInfo.services?.localService) services.push('Lokale Dienstleistungen');
-            if (companyInfo.services?.onlineProduct) services.push('Online-Produkte');
-            if (companyInfo.services?.localProduct) services.push('Lokale Produkte');
+            if (companyInfo.online_service) services.push('Online-Dienstleistungen');
+            if (companyInfo.local_service) services.push('Lokale Dienstleistungen');
+            if (companyInfo.online_product) services.push('Online-Produkte');
+            if (companyInfo.local_product) services.push('Lokale Produkte');
             
             // Erstellen des angereicherten Prompts
             prompt = `
@@ -1066,7 +1067,7 @@ UNTERNEHMENSDATEN:
 - Angebotene Leistungen: ${services.length > 0 ? services.join(', ') : 'Diverse Leistungen'}
 - Website: ${companyInfo.website || 'N/A'}
 - E-Mail: ${companyInfo.email || 'kontakt@example.com'}
-- Adresse: ${companyInfo.address?.street || ''}, ${companyInfo.address?.zipCode || ''} ${companyInfo.address?.city || ''}, ${companyInfo.address?.country || ''}
+- Adresse: ${companyInfo.street || ''}, ${companyInfo.zip_code || ''} ${companyInfo.city || ''}, ${companyInfo.country || ''}
 
 NUTZERBESCHREIBUNG:
 "${result.data.designDescription}"
