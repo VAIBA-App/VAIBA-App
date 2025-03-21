@@ -219,12 +219,12 @@ export default function WebsiteGenerator() {
                   <TabsContent value="preview" className="border rounded-b-md">
                     <div className="h-80 overflow-hidden border rounded bg-white">
                       <iframe 
-                        srcDoc={selectedDesign?.generatedCode || ""}
+                        srcDoc={selectedDesign?.generatedCode?.replace(/```html|```/g, '') || ""}
                         title="Website Preview"
                         className="w-full h-full transform scale-100 origin-top-left"
                         sandbox="allow-same-origin allow-scripts allow-forms"
                         loading="eager"
-                        onLoad={(e) => console.log("iframe loaded", (e.target as HTMLIFrameElement).contentDocument?.body)}
+                        onLoad={(e) => console.log("iframe loaded successfully")}
                       />
                     </div>
                   </TabsContent>
@@ -275,10 +275,10 @@ export default function WebsiteGenerator() {
                   {design.generatedCode ? (
                     <div className="w-full h-full overflow-hidden">
                       <iframe 
-                        srcDoc={design.generatedCode}
+                        srcDoc={design.generatedCode?.replace(/```html|```/g, '')}
                         title={`Design ${design.id}`}
                         className="w-full h-full scale-90 origin-top-left"
-                        sandbox="allow-same-origin allow-scripts"
+                        sandbox="allow-same-origin allow-scripts allow-forms"
                       />
                     </div>
                   ) : (

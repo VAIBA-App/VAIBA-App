@@ -829,7 +829,22 @@ Erstelle eine vollständige, funktionsfähige Website mit einer professionellen 
 
         // Extract the generated code from the response
         if (response.choices && response.choices.length > 0 && response.choices[0].message) {
-          generatedCode = response.choices[0].message.content.trim();
+          // Remove markdown code block delimiters if present
+          let rawCode = response.choices[0].message.content.trim();
+          // Remove markdown code fences if they exist
+          if (rawCode.startsWith('```')) {
+            const firstNewlineIndex = rawCode.indexOf('\n');
+            if (firstNewlineIndex !== -1) {
+              rawCode = rawCode.substring(firstNewlineIndex + 1);
+              
+              // Remove trailing backticks if they exist
+              const lastBackticksIndex = rawCode.lastIndexOf('```');
+              if (lastBackticksIndex !== -1) {
+                rawCode = rawCode.substring(0, lastBackticksIndex).trim();
+              }
+            }
+          }
+          generatedCode = rawCode;
           console.log('Successfully generated website code');
         } else {
           console.error('OpenAI API did not return expected response format');
@@ -942,42 +957,68 @@ Erstelle eine vollständige, funktionsfähige Website mit einer professionellen 
       // Generate new code if description has changed
       if (result.data.designDescription) {
         try {
-          // Implementieren wir später mit der OpenAI API
-          // Dies ist ein Platzhalter für die Integration mit OpenAI
-          result.data.generatedCode = `<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aktualisierte Website</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-    header { background-color: #0070f3; color: white; padding: 20px; text-align: center; }
-    main { padding: 20px; }
-    .container { max-width: 1200px; margin: 0 auto; }
-    footer { background-color: #f5f5f5; padding: 20px; text-align: center; }
-  </style>
-</head>
-<body>
-  <header>
-    <div class="container">
-      <h1>Meine aktualisierte Website</h1>
-      <p>Basierend auf Ihrer neuen Beschreibung: ${result.data.designDescription}</p>
-    </div>
-  </header>
-  <main>
-    <div class="container">
-      <h2>Über uns</h2>
-      <p>Dies ist ein Beispiel für eine aktualisierte automatisch generierte Website.</p>
-    </div>
-  </main>
-  <footer>
-    <div class="container">
-      <p>&copy; 2025 Website Generator</p>
-    </div>
-  </footer>
-</body>
-</html>`;
+          // OpenAI API Integration
+          const openaiClient = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+          });
+
+          console.log('Generating updated website code using OpenAI API for description:', result.data.designDescription);
+          
+          const prompt = `
+Als erfahrener Webentwickler, erstelle bitte eine einfache aber professionelle HTML/CSS-Website basierend auf dieser Beschreibung:
+
+"${result.data.designDescription}"
+
+Befolge diese Richtlinien:
+1. Die Website sollte responsiv und modern aussehen
+2. Verwende nur inline CSS (kein externes CSS)
+3. Füge Platzhalter für Bilder hinzu (verwende keine externen Bildquellen)
+4. Berücksichtige Farben, Layout und Struktur basierend auf der Beschreibung
+5. Der Code sollte valides HTML5 und CSS sein
+6. Verzichte auf JavaScript, da es von der Vorschau blockiert werden könnte
+7. Gib NUR den HTML-Code zurück, ohne Erklärungen oder Kommentare außerhalb des Codes
+
+Erstelle eine vollständige, funktionsfähige Website mit einer professionellen Struktur und gutem Design.
+`;
+
+          const response = await openaiClient.chat.completions.create({
+            model: "gpt-4o", // or gpt-3.5-turbo if gpt-4 is not available
+            messages: [
+              {
+                role: "system",
+                content: "Du bist ein erfahrener Webentwickler, der HTML/CSS-Code für Websites erstellt."
+              },
+              {
+                role: "user",
+                content: prompt
+              }
+            ],
+            temperature: 0.7,
+            max_tokens: 2000
+          });
+
+          // Extract the generated code from the response
+          if (response.choices && response.choices.length > 0 && response.choices[0].message) {
+            // Remove markdown code block delimiters if present
+            let rawCode = response.choices[0].message.content.trim();
+            // Remove markdown code fences if they exist
+            if (rawCode.startsWith('```')) {
+              const firstNewlineIndex = rawCode.indexOf('\n');
+              if (firstNewlineIndex !== -1) {
+                rawCode = rawCode.substring(firstNewlineIndex + 1);
+                
+                // Remove trailing backticks if they exist
+                const lastBackticksIndex = rawCode.lastIndexOf('```');
+                if (lastBackticksIndex !== -1) {
+                  rawCode = rawCode.substring(0, lastBackticksIndex).trim();
+                }
+              }
+            }
+            result.data.generatedCode = rawCode;
+            console.log('Successfully generated updated website code');
+          } else {
+            throw new Error('OpenAI API did not return expected response format');
+          }
         } catch (error) {
           console.error('Error updating website code:', error);
           return res.status(500).json({
