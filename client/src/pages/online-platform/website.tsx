@@ -41,8 +41,16 @@ export default function WebsiteGenerator() {
       const sortedDesigns = [...designs].sort((a, b) => 
         new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
       );
-      setSelectedDesign(sortedDesigns[0]);
-      setDescription(sortedDesigns[0].designDescription || "");
+      
+      // Bereinigen der Backticks aus dem generierten Code
+      const cleanedDesign = {
+        ...sortedDesigns[0],
+        generatedCode: sortedDesigns[0].generatedCode?.replace(/```html|```/g, '') || ""
+      };
+      
+      setSelectedDesign(cleanedDesign);
+      setDescription(cleanedDesign.designDescription || "");
+      console.log("Initial design set:", cleanedDesign);
     }
   }, [designs]);
 
@@ -53,14 +61,23 @@ export default function WebsiteGenerator() {
       return response as unknown as WebsiteDesign;
     },
     onSuccess: (data: WebsiteDesign) => {
+      // Manuell das neue Design direkt setzen
+      const cleanedData = {
+        ...data,
+        generatedCode: data.generatedCode?.replace(/```html|```/g, '') || ""
+      };
+      console.log("Design erstellt:", cleanedData);
+      
+      // Wichtig: Setze das Design direkt, bevor die Liste aktualisiert wird
+      setSelectedDesign(cleanedData);
+      
+      // Dann erst die Query-Liste aktualisieren
       queryClient.invalidateQueries({ queryKey: ["/api/website-designs"] });
-      // Direkt das neue Design setzen
-      setSelectedDesign(data);
+      
       toast({
         title: "Website erstellt",
         description: "Ihre Website-Design wurde erfolgreich generiert.",
       });
-      console.log("Generierter Code:", data.generatedCode);
     },
     onError: (error) => {
       toast({
@@ -80,8 +97,19 @@ export default function WebsiteGenerator() {
       return response as unknown as WebsiteDesign;
     },
     onSuccess: (data: WebsiteDesign) => {
+      // Auch beim Update das neue Design direkt setzen
+      const cleanedData = {
+        ...data,
+        generatedCode: data.generatedCode?.replace(/```html|```/g, '') || ""
+      };
+      console.log("Design aktualisiert:", cleanedData);
+      
+      // Wichtig: Setze das Design direkt, bevor die Liste aktualisiert wird
+      setSelectedDesign(cleanedData);
+      
+      // Dann erst die Query-Liste aktualisieren
       queryClient.invalidateQueries({ queryKey: ["/api/website-designs"] });
-      setSelectedDesign(data);
+      
       toast({
         title: "Website aktualisiert",
         description: "Ihre Website-Design wurde erfolgreich aktualisiert.",
@@ -257,8 +285,14 @@ export default function WebsiteGenerator() {
                 key={design.id}
                 className={`cursor-pointer ${selectedDesign?.id === design.id ? 'border-primary' : ''}`}
                 onClick={() => {
-                  setSelectedDesign(design);
+                  // Auch beim Auswählen sollten wir die Backticks entfernen
+                  const cleanedDesign = {
+                    ...design,
+                    generatedCode: design.generatedCode?.replace(/```html|```/g, '') || ""
+                  };
+                  setSelectedDesign(cleanedDesign);
                   setDescription(design.designDescription || "");
+                  console.log("Design ausgewählt:", cleanedDesign);
                 }}
               >
                 <CardHeader className="pb-2">
