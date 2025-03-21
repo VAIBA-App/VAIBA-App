@@ -31,7 +31,8 @@ import HelpSettings from "@/pages/settings/help";
 import Simulator from "@/pages/simulator";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth";
-import CompanyInformation from "@/pages/company/information"; // Import the new component
+import CompanyInformation from "@/pages/company/information";
+import WebsiteGenerator from "@/pages/online-platform/website";
 
 // Company Pages
 import Portfolio from "@/pages/company/portfolio";
@@ -73,6 +74,7 @@ function App() {
                       <Route path="/marketing/email" component={EmailPage} />
                       <Route path="/marketing/calendar" component={CalendarPage} />
                       <Route path="/marketing/social" component={SocialMediaPage} />
+                      <Route path="/online-platform/website" component={WebsiteGenerator} />
                       <Route path="/settings/language" component={LanguageSettings} />
                       <Route path="/settings/theme" component={ThemeSettings} />
                       <Route path="/settings/profile" component={ProfileSettings} />

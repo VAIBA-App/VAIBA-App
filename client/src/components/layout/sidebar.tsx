@@ -37,6 +37,8 @@ import {
   Calculator,
   TrendingUp,
   Receipt,
+  Globe,
+  Blocks,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -154,6 +156,18 @@ export function Sidebar() {
           title: t("socialMedia"),
           href: "/marketing/social",
           icon: Share2,
+        }
+      ],
+    },
+    {
+      title: "Onlineplattform",
+      href: "/online-platform",
+      icon: Globe,
+      subItems: [
+        {
+          title: "Website/Shop erstellen",
+          href: "/online-platform/website",
+          icon: Blocks,
         }
       ],
     },
