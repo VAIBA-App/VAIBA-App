@@ -788,42 +788,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // Implementieren wir später mit der OpenAI API
         // Dies ist ein Platzhalter für die Integration mit OpenAI
-        generatedCode = `
-        <!DOCTYPE html>
-        <html lang="de">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Generierte Website</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-            header { background-color: #0070f3; color: white; padding: 20px; text-align: center; }
-            main { padding: 20px; }
-            .container { max-width: 1200px; margin: 0 auto; }
-            footer { background-color: #f5f5f5; padding: 20px; text-align: center; }
-          </style>
-        </head>
-        <body>
-          <header>
-            <div class="container">
-              <h1>Meine generierte Website</h1>
-              <p>Basierend auf Ihrer Beschreibung: ${result.data.designDescription}</p>
-            </div>
-          </header>
-          <main>
-            <div class="container">
-              <h2>Über uns</h2>
-              <p>Dies ist ein Beispiel für eine automatisch generierte Website.</p>
-            </div>
-          </main>
-          <footer>
-            <div class="container">
-              <p>&copy; 2025 Website Generator</p>
-            </div>
-          </footer>
-        </body>
-        </html>
-        `;
+        generatedCode = `<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generierte Website</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    header { background-color: #0070f3; color: white; padding: 20px; text-align: center; }
+    main { padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    footer { background-color: #f5f5f5; padding: 20px; text-align: center; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Meine generierte Website</h1>
+      <p>Basierend auf Ihrer Beschreibung: ${result.data.designDescription}</p>
+    </div>
+  </header>
+  <main>
+    <div class="container">
+      <h2>Über uns</h2>
+      <p>Dies ist ein Beispiel für eine automatisch generierte Website.</p>
+    </div>
+  </main>
+  <footer>
+    <div class="container">
+      <p>&copy; 2025 Website Generator</p>
+    </div>
+  </footer>
+</body>
+</html>`;
       } catch (error) {
         console.error('Error generating website code:', error);
         return res.status(500).json({
@@ -868,42 +866,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           // Implementieren wir später mit der OpenAI API
           // Dies ist ein Platzhalter für die Integration mit OpenAI
-          result.data.generatedCode = `
-          <!DOCTYPE html>
-          <html lang="de">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Aktualisierte Website</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-              header { background-color: #0070f3; color: white; padding: 20px; text-align: center; }
-              main { padding: 20px; }
-              .container { max-width: 1200px; margin: 0 auto; }
-              footer { background-color: #f5f5f5; padding: 20px; text-align: center; }
-            </style>
-          </head>
-          <body>
-            <header>
-              <div class="container">
-                <h1>Meine aktualisierte Website</h1>
-                <p>Basierend auf Ihrer neuen Beschreibung: ${result.data.designDescription}</p>
-              </div>
-            </header>
-            <main>
-              <div class="container">
-                <h2>Über uns</h2>
-                <p>Dies ist ein Beispiel für eine aktualisierte automatisch generierte Website.</p>
-              </div>
-            </main>
-            <footer>
-              <div class="container">
-                <p>&copy; 2025 Website Generator</p>
-              </div>
-            </footer>
-          </body>
-          </html>
-          `;
+          result.data.generatedCode = `<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aktualisierte Website</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    header { background-color: #0070f3; color: white; padding: 20px; text-align: center; }
+    main { padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    footer { background-color: #f5f5f5; padding: 20px; text-align: center; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Meine aktualisierte Website</h1>
+      <p>Basierend auf Ihrer neuen Beschreibung: ${result.data.designDescription}</p>
+    </div>
+  </header>
+  <main>
+    <div class="container">
+      <h2>Über uns</h2>
+      <p>Dies ist ein Beispiel für eine aktualisierte automatisch generierte Website.</p>
+    </div>
+  </main>
+  <footer>
+    <div class="container">
+      <p>&copy; 2025 Website Generator</p>
+    </div>
+  </footer>
+</body>
+</html>`;
         } catch (error) {
           console.error('Error updating website code:', error);
           return res.status(500).json({

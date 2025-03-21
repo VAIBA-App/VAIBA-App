@@ -207,12 +207,13 @@ export default function WebsiteGenerator() {
                     <TabsTrigger value="code" className="flex-1"><Code2 className="mr-2 h-4 w-4" /> Code</TabsTrigger>
                   </TabsList>
                   <TabsContent value="preview" className="border rounded-b-md">
-                    <div className="h-80 overflow-hidden border rounded">
+                    <div className="h-80 overflow-hidden border rounded bg-white">
                       <iframe 
                         srcDoc={selectedDesign.generatedCode}
                         title="Website Preview"
-                        className="w-full h-full"
+                        className="w-full h-full transform scale-100 origin-top-left"
                         sandbox="allow-same-origin allow-scripts"
+                        loading="eager"
                       />
                     </div>
                   </TabsContent>
@@ -261,12 +262,14 @@ export default function WebsiteGenerator() {
                 </CardHeader>
                 <CardContent className="h-24 overflow-hidden">
                   {design.generatedCode ? (
-                    <iframe 
-                      srcDoc={design.generatedCode}
-                      title={`Design ${design.id}`}
-                      className="w-full h-full"
-                      sandbox="allow-same-origin allow-scripts"
-                    />
+                    <div className="w-full h-full overflow-hidden">
+                      <iframe 
+                        srcDoc={design.generatedCode}
+                        title={`Design ${design.id}`}
+                        className="w-full h-full scale-90 origin-top-left"
+                        sandbox="allow-same-origin allow-scripts"
+                      />
+                    </div>
                   ) : (
                     <div className="h-full flex items-center justify-center">
                       <p className="text-sm text-muted-foreground">Keine Vorschau verfügbar</p>
