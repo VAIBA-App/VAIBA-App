@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,9 +7,22 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Globe, Code2, Eye, RefreshCw, Save } from "lucide-react";
+import { 
+  Loader2, Globe, Code2, Eye, RefreshCw, Save, 
+  Trash2, ExternalLink, AlertTriangle
+} from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { PencilRuler } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface WebsiteDesign {
   id: number;
@@ -24,6 +37,9 @@ interface WebsiteDesign {
 export default function WebsiteGenerator() {
   const [description, setDescription] = useState<string>("");
   const [selectedDesign, setSelectedDesign] = useState<WebsiteDesign | null>(null);
+  const [designToDelete, setDesignToDelete] = useState<WebsiteDesign | null>(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -132,6 +148,55 @@ export default function WebsiteGenerator() {
     }
   });
 
+  // Delete a design
+  const deleteDesignMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("DELETE", `/api/website-designs/${id}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Website gelöscht",
+        description: "Website-Design wurde erfolgreich gelöscht.",
+      });
+      
+      // Nach dem Löschen das Query neu laden
+      queryClient.invalidateQueries({ queryKey: ["/api/website-designs"] });
+      
+      // Wenn das aktuell ausgewählte Design gelöscht wurde, setzen wir es zurück
+      if (selectedDesign && designToDelete && selectedDesign.id === designToDelete.id) {
+        setSelectedDesign(null);
+        setDescription("");
+      }
+      
+      // Dialog schließen und Status zurücksetzen
+      setShowConfirmDelete(false);
+      setDesignToDelete(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Fehler",
+        description: `Fehler beim Löschen des Website-Designs: ${error.message}`,
+        variant: "destructive",
+      });
+      setShowConfirmDelete(false);
+    }
+  });
+
+  // Öffnet ein neues Fenster mit der vollständigen Website-Vorschau
+  const openInNewTab = useCallback(() => {
+    if (!selectedDesign?.generatedCode) return;
+    
+    // Erstellt einen Blob mit dem HTML-Inhalt
+    const blob = new Blob([selectedDesign.generatedCode], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    
+    // Öffnet ein neues Fenster mit dem Inhalt
+    window.open(url, '_blank');
+    
+    // Bereinigt die URL nach dem Öffnen des Fensters
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+  }, [selectedDesign]);
+
   const handleCreateOrUpdate = useCallback(() => {
     if (!description.trim()) {
       toast({
@@ -231,13 +296,31 @@ export default function WebsiteGenerator() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Website Vorschau</CardTitle>
-              <CardDescription>
-                {selectedDesign ? 
-                  `Zuletzt aktualisiert: ${new Date(selectedDesign.updated_at).toLocaleString('de-DE')}` : 
-                  "Noch keine Website generiert"
-                }
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Website Vorschau</CardTitle>
+                  <CardDescription>
+                    {selectedDesign ? 
+                      `Zuletzt aktualisiert: ${new Date(selectedDesign.updated_at).toLocaleString('de-DE')}` : 
+                      "Noch keine Website generiert"
+                    }
+                  </CardDescription>
+                </div>
+                {selectedDesign && (
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openInNewTab();
+                      }}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-1" /> Im Browser öffnen
+                    </Button>
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               {isLoadingDesigns ? (
@@ -303,14 +386,30 @@ export default function WebsiteGenerator() {
                 }}
               >
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base truncate">
-                    {design.designDescription.length > 40 
-                      ? design.designDescription.substring(0, 40) + "..." 
-                      : design.designDescription}
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    {new Date(design.created_at).toLocaleDateString('de-DE')}
-                  </CardDescription>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-base truncate">
+                        {design.designDescription.length > 40 
+                          ? design.designDescription.substring(0, 40) + "..." 
+                          : design.designDescription}
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        {new Date(design.created_at).toLocaleDateString('de-DE')}
+                      </CardDescription>
+                    </div>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDesignToDelete(design);
+                        setShowConfirmDelete(true);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="h-24 overflow-hidden">
                   {design.generatedCode ? (
@@ -333,6 +432,42 @@ export default function WebsiteGenerator() {
           </div>
         </div>
       )}
+
+      {/* Bestätigungsdialog für Löschen */}
+      <AlertDialog open={showConfirmDelete} onOpenChange={setShowConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Website-Design löschen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Möchten Sie dieses Website-Design wirklich löschen? 
+              Diese Aktion kann nicht rückgängig gemacht werden.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={() => {
+                if (designToDelete) {
+                  deleteDesignMutation.mutate(designToDelete.id);
+                }
+              }}
+            >
+              {deleteDesignMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Löschen...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Löschen
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

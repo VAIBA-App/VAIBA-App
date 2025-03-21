@@ -284,7 +284,7 @@ Befolge diese Richtlinien:
 3. Verwende modernen CSS-Stil inspiriert von Tailwind oder Bootstrap (in-line)
 4. Integriere die echten Unternehmensdaten in die Website
 5. Füge ein attraktives Hintergrundbild im Header-Bereich hinzu (als SVG oder Data-URL)
-6. Alle Links müssen innerhalb der Seite navigieren (#anchor-links), NICHT auf externe Seiten
+6. Alle Navigationspunkte und Links müssen NUR mit Hashtags arbeiten (#service, #about, etc.) und zu Ankerpunkten auf derselben Seite führen
 7. Der Code muss valides HTML5 und CSS sein mit einer responsive, visuell ansprechenden Gestaltung
 8. Implementiere folgende interaktive Elemente:
    - Professioneller Bilder-Slider mit Übergangseffekten
@@ -308,7 +308,7 @@ Befolge diese Richtlinien:
 2. Integriere ansprechende Google Fonts (mit @import oder font-face) für eine elegante Typografie
 3. Verwende modernen CSS-Stil inspiriert von Tailwind oder Bootstrap (in-line)
 4. Füge ein attraktives Hintergrundbild im Header-Bereich hinzu (als SVG oder Data-URL)
-5. Alle Links müssen innerhalb der Seite navigieren (#anchor-links), NICHT auf externe Seiten
+5. Alle Navigationspunkte und Links müssen NUR mit Hashtags arbeiten (#service, #about, etc.) und zu Ankerpunkten auf derselben Seite führen
 6. Der Code muss valides HTML5 und CSS sein mit einer responsive, visuell ansprechenden Gestaltung
 7. Implementiere folgende interaktive Elemente:
    - Professioneller Bilder-Slider mit Übergangseffekten
