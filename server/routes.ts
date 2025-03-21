@@ -727,6 +727,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Contact form email route
+  app.post("/api/contact-form", async (req, res) => {
+    try {
+      const { name, email, subject, message, recipientEmail } = req.body;
+
+      // Validierung der Eingaben
+      if (!name || !email || !subject || !message || !recipientEmail) {
+        return res.status(400).json({ 
+          message: "Fehlende Daten. Bitte alle Felder ausfüllen.",
+          success: false 
+        });
+      }
+
+      // E-Mail an den Empfänger senden
+      const result = await sendContactFormEmail(
+        recipientEmail,
+        name,
+        email,
+        subject,
+        message
+      );
+
+      if (result) {
+        return res.status(200).json({ 
+          message: "Nachricht erfolgreich gesendet!", 
+          success: true 
+        });
+      } else {
+        throw new Error("Fehler beim Senden der Nachricht");
+      }
+    } catch (error) {
+      console.error('Fehler bei der Kontaktformular-Verarbeitung:', error);
+      res.status(500).json({
+        message: "Fehler beim Senden der Nachricht",
+        error: error instanceof Error ? error.message : 'Unbekannter Fehler',
+        success: false
+      });
+    }
+  });
+
   // Website design routes
   app.get("/api/website-designs", async (req, res) => {
     try {
@@ -947,6 +987,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error creating website design:', error);
       res.status(500).json({
         message: "Error creating website design",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Endpunkt zum direkten Aktualisieren des HTML-Codes (ohne Neugenerierung)
+  app.put("/api/website-designs/:id/code", async (req, res) => {
+    try {
+      const { generatedCode } = req.body;
+      
+      if (!generatedCode) {
+        return res.status(400).json({ 
+          message: "Der HTML-Code ist erforderlich",
+          success: false 
+        });
+      }
+
+      const [updatedDesign] = await db
+        .update(WebsiteDesigns)
+        .set({
+          generatedCode,
+          updated_at: new Date(),
+        })
+        .where(eq(WebsiteDesigns.id, parseInt(req.params.id)))
+        .returning();
+
+      if (!updatedDesign) {
+        return res.status(404).json({ message: "Website design not found" });
+      }
+
+      res.json(updatedDesign);
+    } catch (error) {
+      console.error('Error updating website code:', error);
+      res.status(500).json({
+        message: "Error updating website code",
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }

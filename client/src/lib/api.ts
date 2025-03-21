@@ -3,6 +3,23 @@ import { useAuthStore } from '@/hooks/use-auth';
 
 const API_BASE = '/api';
 
+// Kontaktformular-Anfrage für die generierten Websites
+export async function sendContactForm(data: {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  recipientEmail: string;
+}) {
+  return fetch('/api/contact-form', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data)
+  }).then(res => res.json());
+}
+
 async function fetchApi<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -145,6 +162,31 @@ export const conversationApi = {
 };
 
 // Chat message type definition
+// Website design endpoints
+export const websiteDesignApi = {
+  getAll: () => fetchApi<any[]>('/website-designs'),
+  get: (id: number) => fetchApi<any>(`/website-designs/${id}`),
+  create: (data: { designDescription: string, userId?: number }) =>
+    fetchApi<any>('/website-designs', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id: number, data: { designDescription: string }) =>
+    fetchApi<any>(`/website-designs/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  updateCode: (id: number, generatedCode: string) =>
+    fetchApi<any>(`/website-designs/${id}/code`, {
+      method: 'PUT',
+      body: JSON.stringify({ generatedCode }),
+    }),
+  delete: (id: number) =>
+    fetchApi(`/website-designs/${id}`, {
+      method: 'DELETE',
+    }),
+};
+
 export type ChatMessage = {
   role: 'assistant' | 'user';
   content: string;

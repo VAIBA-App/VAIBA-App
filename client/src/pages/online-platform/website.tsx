@@ -347,8 +347,40 @@ export default function WebsiteGenerator() {
                     </div>
                   </TabsContent>
                   <TabsContent value="code">
-                    <div className="h-80 overflow-auto p-4 bg-muted rounded-b-md">
-                      <pre className="text-xs">{selectedDesign.generatedCode}</pre>
+                    <div className="h-80 bg-muted rounded-b-md flex flex-col">
+                      <div className="flex items-center justify-between p-2 border-b">
+                        <div className="text-sm text-muted-foreground">HTML-Editor</div>
+                        <Button 
+                          size="sm" 
+                          onClick={() => {
+                            if (selectedDesign && editedCode) {
+                              websiteDesignApi.updateCode(selectedDesign.id, editedCode)
+                                .then((updatedDesign) => {
+                                  setSelectedDesign(updatedDesign);
+                                  toast({
+                                    title: "Code aktualisiert",
+                                    description: "Der HTML-Code wurde erfolgreich aktualisiert."
+                                  });
+                                })
+                                .catch(error => {
+                                  toast({
+                                    title: "Fehler",
+                                    description: `Fehler beim Aktualisieren des Codes: ${error.message}`,
+                                    variant: "destructive"
+                                  });
+                                });
+                            }
+                          }}
+                          disabled={!editedCode || editedCode === selectedDesign.generatedCode}
+                        >
+                          <Save className="mr-2 h-4 w-4" /> Änderungen speichern
+                        </Button>
+                      </div>
+                      <Textarea 
+                        className="flex-1 font-mono text-xs p-4 bg-background"
+                        value={editedCode || selectedDesign.generatedCode}
+                        onChange={(e) => setEditedCode(e.target.value)}
+                      />
                     </div>
                   </TabsContent>
                 </Tabs>
