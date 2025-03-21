@@ -244,5 +244,84 @@ export async function generateChatResponse(message: string, userId: number) {
   }
 }
 
+/**
+ * Generiert einen optimierten Prompt für die Website-Erstellung basierend auf Unternehmensinformationen
+ * 
+ * @param companyInfo - Unternehmensinformationen wie Name, Branche, etc.
+ * @param designDescription - Nutzerangabe zur gewünschten Website-Gestaltung
+ * @returns Formatierter Prompt für die OpenAI API
+ */
+export function generateWebsitePrompt(
+  companyInfo: any, 
+  designDescription: string
+): string {
+  // Bestimme die verfügbaren Services als String
+  const services = [];
+  if (companyInfo?.online_service) services.push('Online-Dienstleistungen');
+  if (companyInfo?.local_service) services.push('Lokale Dienstleistungen');
+  if (companyInfo?.online_product) services.push('Online-Produkte');
+  if (companyInfo?.local_product) services.push('Lokale Produkte');
+  
+  // Erstellen des angereicherten Prompts mit Unternehmensdaten
+  if (companyInfo) {
+    return `
+Als erfahrener Webentwickler, erstelle bitte eine professionelle HTML/CSS-Website für das folgende Unternehmen:
+
+UNTERNEHMENSDATEN:
+- Name: ${companyInfo.name || 'Unbekannt'}
+- Branche: ${companyInfo.industry || 'Unbekannt'}
+- Angebotene Leistungen: ${services.length > 0 ? services.join(', ') : 'Diverse Leistungen'}
+- Website: ${companyInfo.website || 'N/A'}
+- E-Mail: ${companyInfo.email || 'kontakt@example.com'}
+- Adresse: ${companyInfo.street || ''}, ${companyInfo.zip_code || ''} ${companyInfo.city || ''}, ${companyInfo.country || ''}
+
+NUTZERBESCHREIBUNG:
+"${designDescription}"
+
+Befolge diese Richtlinien:
+1. Erstelle eine MODERNE, responsive Website mit Flexbox/Grid-Layout für optimale Darstellung
+2. Integriere ansprechende Google Fonts (mit @import oder font-face) für eine elegante Typografie
+3. Verwende modernen CSS-Stil inspiriert von Tailwind oder Bootstrap (in-line)
+4. Integriere die echten Unternehmensdaten in die Website
+5. Füge ein attraktives Hintergrundbild im Header-Bereich hinzu (als SVG oder Data-URL)
+6. Alle Links müssen innerhalb der Seite navigieren (#anchor-links), NICHT auf externe Seiten
+7. Der Code muss valides HTML5 und CSS sein mit einer responsive, visuell ansprechenden Gestaltung
+8. Implementiere folgende interaktive Elemente:
+   - Professioneller Bilder-Slider mit Übergangseffekten
+   - Animierte Scroll-Effekte und Hover-Zustände für alle Buttons
+   - Dynamischer Textwechsel für Headlines und Slogans
+   - Moderne Animationen (Fade-in, Slide-in) für ein premium Erscheinungsbild
+9. Alle Navigationspunkte müssen zu entsprechenden Abschnitten auf derselben Seite führen (#services, #about, #contact)
+10. Gib NUR den HTML-Code zurück, ohne Erklärungen oder Kommentare außerhalb des Codes
+
+Erstelle eine vollständige, funktionsfähige Website mit einer professionellen Struktur und gutem Design, die speziell auf die ${companyInfo.industry || 'angegebene'} Branche zugeschnitten ist und moderne Web-Standards nutzt.
+`;
+  } else {
+    // Standardprompt ohne Unternehmensdaten
+    return `
+Als erfahrener Webentwickler, erstelle bitte eine einfache aber professionelle HTML/CSS-Website basierend auf dieser Beschreibung:
+
+"${designDescription}"
+
+Befolge diese Richtlinien:
+1. Erstelle eine MODERNE, responsive Website mit Flexbox/Grid-Layout für optimale Darstellung
+2. Integriere ansprechende Google Fonts (mit @import oder font-face) für eine elegante Typografie
+3. Verwende modernen CSS-Stil inspiriert von Tailwind oder Bootstrap (in-line)
+4. Füge ein attraktives Hintergrundbild im Header-Bereich hinzu (als SVG oder Data-URL)
+5. Alle Links müssen innerhalb der Seite navigieren (#anchor-links), NICHT auf externe Seiten
+6. Der Code muss valides HTML5 und CSS sein mit einer responsive, visuell ansprechenden Gestaltung
+7. Implementiere folgende interaktive Elemente:
+   - Professioneller Bilder-Slider mit Übergangseffekten
+   - Animierte Scroll-Effekte und Hover-Zustände für alle Buttons
+   - Dynamischer Textwechsel für Headlines und Slogans
+   - Moderne Animationen (Fade-in, Slide-in) für ein premium Erscheinungsbild
+8. Alle Navigationspunkte müssen zu entsprechenden Abschnitten auf derselben Seite führen (#services, #about, #contact)
+9. Gib NUR den HTML-Code zurück, ohne Erklärungen oder Kommentare außerhalb des Codes
+
+Erstelle eine vollständige, funktionsfähige Website mit einer professionellen Struktur und gutem Design, die moderne Web-Standards nutzt.
+`;
+  }
+}
+
 // Export the OpenAI instance for use in other components
 export { openai };

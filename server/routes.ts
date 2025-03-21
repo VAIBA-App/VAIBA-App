@@ -15,7 +15,7 @@ import {
 } from "@db/schema";
 import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
-import { generateChatResponse } from "./lib/openai";
+import { generateChatResponse, generateWebsitePrompt } from "./lib/openai";
 import { sendVerificationEmail, verifyEmail } from './lib/email';
 import bcrypt from 'bcrypt';
 import { validateAddress } from './lib/address-validation';
