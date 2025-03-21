@@ -923,16 +923,23 @@ Erstelle eine vollständige, funktionsfähige Website mit einer professionellen 
 </html>`;
       }
 
-      // Speichern in der Datenbank
+      // Speichern in der Datenbank mit expliziten Feldern
       const [websiteDesign] = await db
         .insert(WebsiteDesigns)
         .values({
-          ...result.data,
-          generatedCode,
+          userId: result.data.userId || 1,
+          designDescription: result.data.designDescription,
+          generatedCode: generatedCode, // Explizit den generierten Code übergeben
           created_at: new Date(),
           updated_at: new Date(),
         })
         .returning();
+      
+      console.log("Saved design:", {
+        id: websiteDesign.id,
+        description: websiteDesign.designDescription,
+        codeLength: websiteDesign.generatedCode ? websiteDesign.generatedCode.length : 0
+      });
 
       res.status(201).json(websiteDesign);
     } catch (error) {

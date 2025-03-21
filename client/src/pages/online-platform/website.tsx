@@ -58,6 +58,7 @@ export default function WebsiteGenerator() {
   const createDesignMutation = useMutation({
     mutationFn: async (designData: { designDescription: string; userId?: number }) => {
       const response = await apiRequest("POST", "/api/website-designs", designData);
+      console.log("API response for create:", response);
       return response as unknown as WebsiteDesign;
     },
     onSuccess: (data: WebsiteDesign) => {
