@@ -31,7 +31,7 @@ export default function WebsiteGenerator() {
     queryKey: ["/api/website-designs"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/website-designs");
-      return response as WebsiteDesign[];
+      return response as unknown as WebsiteDesign[];
     },
   });
 
@@ -48,14 +48,19 @@ export default function WebsiteGenerator() {
 
   // Create a new design
   const createDesignMutation = useMutation({
-    mutationFn: (designData: { designDescription: string; userId?: number }) => 
-      apiRequest("POST", "/api/website-designs", designData),
-    onSuccess: () => {
+    mutationFn: async (designData: { designDescription: string; userId?: number }) => {
+      const response = await apiRequest("POST", "/api/website-designs", designData);
+      return response as unknown as WebsiteDesign;
+    },
+    onSuccess: (data: WebsiteDesign) => {
       queryClient.invalidateQueries({ queryKey: ["/api/website-designs"] });
+      // Direkt das neue Design setzen
+      setSelectedDesign(data);
       toast({
         title: "Website erstellt",
         description: "Ihre Website-Design wurde erfolgreich generiert.",
       });
+      console.log("Generierter Code:", data.generatedCode);
     },
     onError: (error) => {
       toast({
@@ -68,10 +73,15 @@ export default function WebsiteGenerator() {
 
   // Update an existing design
   const updateDesignMutation = useMutation({
-    mutationFn: (data: { id: number; designDescription: string }) => 
-      apiRequest("PUT", `/api/website-designs/${data.id}`, { designDescription: data.designDescription }),
-    onSuccess: () => {
+    mutationFn: async (data: { id: number; designDescription: string }) => {
+      const response = await apiRequest("PUT", `/api/website-designs/${data.id}`, { 
+        designDescription: data.designDescription 
+      });
+      return response as unknown as WebsiteDesign;
+    },
+    onSuccess: (data: WebsiteDesign) => {
       queryClient.invalidateQueries({ queryKey: ["/api/website-designs"] });
+      setSelectedDesign(data);
       toast({
         title: "Website aktualisiert",
         description: "Ihre Website-Design wurde erfolgreich aktualisiert.",
@@ -209,11 +219,12 @@ export default function WebsiteGenerator() {
                   <TabsContent value="preview" className="border rounded-b-md">
                     <div className="h-80 overflow-hidden border rounded bg-white">
                       <iframe 
-                        srcDoc={selectedDesign.generatedCode}
+                        srcDoc={selectedDesign?.generatedCode || ""}
                         title="Website Preview"
                         className="w-full h-full transform scale-100 origin-top-left"
-                        sandbox="allow-same-origin allow-scripts"
+                        sandbox="allow-same-origin allow-scripts allow-forms"
                         loading="eager"
+                        onLoad={(e) => console.log("iframe loaded", (e.target as HTMLIFrameElement).contentDocument?.body)}
                       />
                     </div>
                   </TabsContent>
