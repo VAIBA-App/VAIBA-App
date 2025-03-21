@@ -391,6 +391,109 @@ export default function WebsiteGenerator() {
                       />
                     </div>
                   </TabsContent>
+                  <TabsContent value="images">
+                    <div className="h-80 bg-muted rounded-b-md flex flex-col">
+                      <div className="flex items-center justify-between p-2 border-b">
+                        <div className="text-sm text-muted-foreground">Bilder hochladen</div>
+                      </div>
+                      <div className="flex-1 p-4 flex flex-col">
+                        <div className="border-2 border-dashed rounded-md border-muted-foreground/25 hover:border-primary/50 transition-colors cursor-pointer h-40 flex flex-col items-center justify-center mb-4"
+                          onClick={() => fileInputRef.current?.click()}>
+                          <input 
+                            type="file" 
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept="image/jpeg,image/png,image/gif,image/svg+xml"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setIsUploading(true);
+                                setUploadedImage(null);
+                                
+                                websiteDesignApi.uploadImage(file)
+                                  .then(response => {
+                                    console.log('Image uploaded:', response);
+                                    setUploadedImage({
+                                      url: response.image.url,
+                                      originalName: response.image.originalName
+                                    });
+                                    
+                                    // Text im Code suchen und kopieren
+                                    if (selectedDesign && editedCode) {
+                                      const imageUrl = response.image.url;
+                                      // HTML-Textarea öffnen und Text einfügen
+                                      navigator.clipboard.writeText(imageUrl);
+                                      toast({
+                                        title: "Bild-URL kopiert",
+                                        description: "Die URL des Bildes wurde in die Zwischenablage kopiert."
+                                      });
+                                    }
+                                    
+                                    toast({
+                                      title: "Bild hochgeladen",
+                                      description: "Das Bild wurde erfolgreich hochgeladen."
+                                    });
+                                  })
+                                  .catch(error => {
+                                    console.error('Error uploading image:', error);
+                                    toast({
+                                      title: "Fehler",
+                                      description: `Fehler beim Hochladen des Bildes: ${error.message}`,
+                                      variant: "destructive"
+                                    });
+                                  })
+                                  .finally(() => {
+                                    setIsUploading(false);
+                                  });
+                              }
+                            }}
+                          />
+                          {isUploading ? (
+                            <>
+                              <Loader2 className="h-10 w-10 text-muted-foreground mb-2 animate-spin" />
+                              <p className="text-sm text-muted-foreground">Bild wird hochgeladen...</p>
+                            </>
+                          ) : (
+                            <>
+                              <UploadCloud className="h-10 w-10 text-muted-foreground mb-2" />
+                              <p className="text-sm text-muted-foreground">Klicken Sie hier, um ein Bild auszuwählen</p>
+                              <p className="text-xs text-muted-foreground mt-1">Unterstützte Formate: JPG, PNG, GIF, SVG</p>
+                            </>
+                          )}
+                        </div>
+                        
+                        {uploadedImage && (
+                          <div className="border rounded-md p-4 mt-auto">
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="font-medium">Hochgeladenes Bild</h3>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(uploadedImage.url);
+                                  toast({
+                                    title: "Bild-URL kopiert",
+                                    description: "Die URL des Bildes wurde in die Zwischenablage kopiert."
+                                  });
+                                }}
+                              >
+                                URL kopieren
+                              </Button>
+                            </div>
+                            <div className="flex gap-4 items-center">
+                              <div className="w-16 h-16 bg-muted rounded overflow-hidden flex-shrink-0">
+                                <img src={uploadedImage.url} alt="Vorschau" className="w-full h-full object-cover" />
+                              </div>
+                              <div className="flex-1 overflow-hidden">
+                                <p className="text-sm font-medium truncate">{uploadedImage.originalName}</p>
+                                <p className="text-xs text-muted-foreground break-all">{uploadedImage.url}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </TabsContent>
                 </Tabs>
               ) : (
                 <div className="flex flex-col items-center justify-center h-80 p-4 text-center">
