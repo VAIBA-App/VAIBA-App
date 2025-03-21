@@ -233,9 +233,27 @@ export const Assets = pgTable("assets", {
   created_at: timestamp("created_at").defaultNow(),
 });
 
+// Website Designs table
+export const WebsiteDesigns = pgTable("website_designs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  designDescription: text("design_description").notNull(),
+  generatedCode: text("generated_code"),
+  previewUrl: text("preview_url"),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
 // Assets types and schemas
 export type Asset = typeof Assets.$inferSelect;
 export type InsertAsset = typeof Assets.$inferInsert;
 
 export const insertAssetSchema = createInsertSchema(Assets);
 export const selectAssetSchema = createSelectSchema(Assets);
+
+// Website Designs types and schemas
+export type WebsiteDesign = typeof WebsiteDesigns.$inferSelect;
+export type InsertWebsiteDesign = typeof WebsiteDesigns.$inferInsert;
+
+export const insertWebsiteDesignSchema = createInsertSchema(WebsiteDesigns);
+export const selectWebsiteDesignSchema = createSelectSchema(WebsiteDesigns);
