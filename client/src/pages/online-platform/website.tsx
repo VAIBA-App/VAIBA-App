@@ -29,7 +29,10 @@ export default function WebsiteGenerator() {
   // Fetch user's website designs
   const { data: designs = [], isLoading: isLoadingDesigns } = useQuery({
     queryKey: ["/api/website-designs"],
-    queryFn: () => apiRequest<WebsiteDesign[]>("GET", "/api/website-designs"),
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/website-designs");
+      return response as WebsiteDesign[];
+    },
   });
 
   // Set the latest design as selected, if any
@@ -209,7 +212,7 @@ export default function WebsiteGenerator() {
                         srcDoc={selectedDesign.generatedCode}
                         title="Website Preview"
                         className="w-full h-full"
-                        sandbox="allow-same-origin"
+                        sandbox="allow-same-origin allow-scripts"
                       />
                     </div>
                   </TabsContent>
@@ -262,7 +265,7 @@ export default function WebsiteGenerator() {
                       srcDoc={design.generatedCode}
                       title={`Design ${design.id}`}
                       className="w-full h-full"
-                      sandbox="allow-same-origin"
+                      sandbox="allow-same-origin allow-scripts"
                     />
                   ) : (
                     <div className="h-full flex items-center justify-center">
