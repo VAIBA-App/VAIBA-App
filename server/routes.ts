@@ -1,7 +1,10 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
-import { sendContactFormEmail } from "./lib/email";
+import multer from "multer";
+import fs from "fs";
+import path from "path";
 import {
   profiles,
   users,
@@ -61,6 +64,39 @@ const loginSchema = z.object({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   console.log('Starting route registration...');
+  
+  // Konfiguration für Multer (Datei-Upload)
+  const uploadDir = './uploads/website';
+  
+  // Stelle sicher, dass Upload-Verzeichnis existiert
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+  
+  // Konfiguriere Multer für Datei-Uploads
+  const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const extension = path.extname(file.originalname);
+      cb(null, 'img-' + uniqueSuffix + extension);
+    }
+  });
+  
+  const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB Limitierung
+    fileFilter: (req, file, cb) => {
+      // Nur Bilder akzeptieren
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml'];
+      if (!allowedTypes.includes(file.mimetype)) {
+        return cb(new Error('Nur Bilddateien sind erlaubt (JPEG, PNG, GIF, SVG)'));
+      }
+      cb(null, true);
+    }
+  });
 
   // Deactivate all profiles route
   app.post("/api/profiles/deactivate-all", async (_req, res) => {
@@ -729,6 +765,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Contact form email route
+  // Bild-Upload für generierte Websites
+  app.post("/api/website/upload-image", upload.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ 
+          message: "Keine Bilddatei gefunden",
+          success: false 
+        });
+      }
+
+      // Dateiinformationen für den Client aufbereiten
+      const imageUrl = `/uploads/website/${req.file.filename}`;
+      const imageInfo = {
+        originalName: req.file.originalname,
+        filename: req.file.filename,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+        url: imageUrl
+      };
+
+      res.status(200).json({
+        message: "Bild erfolgreich hochgeladen",
+        image: imageInfo,
+        success: true
+      });
+    } catch (error) {
+      console.error('Fehler beim Hochladen des Bildes:', error);
+      res.status(500).json({
+        message: "Fehler beim Hochladen des Bildes",
+        error: error instanceof Error ? error.message : 'Unbekannter Fehler',
+        success: false
+      });
+    }
+  });
+
+  // Statischen Zugriff auf hochgeladene Dateien bereitstellen
+  app.use('/uploads/website', (req, res, next) => {
+    // Sicherheitscheck: Dateizugriff auf das Upload-Verzeichnis beschränken
+    const requestedFile = req.path;
+    if (requestedFile.includes('..') || !requestedFile.match(/^\/img-[0-9]+-[0-9]+\.(jpg|jpeg|png|gif|svg)$/i)) {
+      return res.status(403).send('Zugriff verweigert');
+    }
+    next();
+  }, express.static(uploadDir));
+
   app.post("/api/contact-form", async (req, res) => {
     try {
       const { name, email, subject, message, recipientEmail } = req.body;
