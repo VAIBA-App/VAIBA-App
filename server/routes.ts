@@ -9,7 +9,9 @@ import {
   insertCustomerSchema,
   insertCallSchema,
   Business_Information,
-  Assets
+  Assets,
+  WebsiteDesigns,
+  insertWebsiteDesignSchema
 } from "@db/schema";
 import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
@@ -17,6 +19,7 @@ import { generateChatResponse } from "./lib/openai";
 import { sendVerificationEmail, verifyEmail } from './lib/email';
 import bcrypt from 'bcrypt';
 import { validateAddress } from './lib/address-validation';
+import axios from 'axios';
 
 // Profile validation schema
 const insertProfileSchema = z.object({
@@ -723,6 +726,236 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Website design routes
+  app.get("/api/website-designs", async (req, res) => {
+    try {
+      const userId = req.query.userId;
+      let websiteDesigns;
+      
+      if (userId && typeof userId === 'string') {
+        websiteDesigns = await db
+          .select()
+          .from(WebsiteDesigns)
+          .where(eq(WebsiteDesigns.userId, parseInt(userId)));
+      } else {
+        websiteDesigns = await db.select().from(WebsiteDesigns);
+      }
+      
+      res.json(websiteDesigns);
+    } catch (error) {
+      console.error('Error fetching website designs:', error);
+      res.status(500).json({
+        message: "Error loading website designs",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.get("/api/website-designs/:id", async (req, res) => {
+    try {
+      const [design] = await db
+        .select()
+        .from(WebsiteDesigns)
+        .where(eq(WebsiteDesigns.id, parseInt(req.params.id)))
+        .limit(1);
+      
+      if (!design) {
+        return res.status(404).json({ message: "Website design not found" });
+      }
+      
+      res.json(design);
+    } catch (error) {
+      console.error('Error fetching website design:', error);
+      res.status(500).json({
+        message: "Error loading website design",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.post("/api/website-designs", async (req, res) => {
+    try {
+      const result = insertWebsiteDesignSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({
+          message: "Invalid website design data",
+          errors: result.error.errors
+        });
+      }
+
+      // Generate code from the description using OpenAI
+      let generatedCode = "";
+      try {
+        // Implementieren wir später mit der OpenAI API
+        // Dies ist ein Platzhalter für die Integration mit OpenAI
+        generatedCode = `
+        <!DOCTYPE html>
+        <html lang="de">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Generierte Website</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+            header { background-color: #0070f3; color: white; padding: 20px; text-align: center; }
+            main { padding: 20px; }
+            .container { max-width: 1200px; margin: 0 auto; }
+            footer { background-color: #f5f5f5; padding: 20px; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <header>
+            <div class="container">
+              <h1>Meine generierte Website</h1>
+              <p>Basierend auf Ihrer Beschreibung: ${result.data.designDescription}</p>
+            </div>
+          </header>
+          <main>
+            <div class="container">
+              <h2>Über uns</h2>
+              <p>Dies ist ein Beispiel für eine automatisch generierte Website.</p>
+            </div>
+          </main>
+          <footer>
+            <div class="container">
+              <p>&copy; 2025 Website Generator</p>
+            </div>
+          </footer>
+        </body>
+        </html>
+        `;
+      } catch (error) {
+        console.error('Error generating website code:', error);
+        return res.status(500).json({
+          message: "Error generating website code",
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+
+      // Speichern in der Datenbank
+      const [websiteDesign] = await db
+        .insert(WebsiteDesigns)
+        .values({
+          ...result.data,
+          generatedCode,
+          created_at: new Date(),
+          updated_at: new Date(),
+        })
+        .returning();
+
+      res.status(201).json(websiteDesign);
+    } catch (error) {
+      console.error('Error creating website design:', error);
+      res.status(500).json({
+        message: "Error creating website design",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.put("/api/website-designs/:id", async (req, res) => {
+    try {
+      const result = insertWebsiteDesignSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({
+          message: "Invalid website design data",
+          errors: result.error.errors
+        });
+      }
+
+      // Generate new code if description has changed
+      if (result.data.designDescription) {
+        try {
+          // Implementieren wir später mit der OpenAI API
+          // Dies ist ein Platzhalter für die Integration mit OpenAI
+          result.data.generatedCode = `
+          <!DOCTYPE html>
+          <html lang="de">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Aktualisierte Website</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+              header { background-color: #0070f3; color: white; padding: 20px; text-align: center; }
+              main { padding: 20px; }
+              .container { max-width: 1200px; margin: 0 auto; }
+              footer { background-color: #f5f5f5; padding: 20px; text-align: center; }
+            </style>
+          </head>
+          <body>
+            <header>
+              <div class="container">
+                <h1>Meine aktualisierte Website</h1>
+                <p>Basierend auf Ihrer neuen Beschreibung: ${result.data.designDescription}</p>
+              </div>
+            </header>
+            <main>
+              <div class="container">
+                <h2>Über uns</h2>
+                <p>Dies ist ein Beispiel für eine aktualisierte automatisch generierte Website.</p>
+              </div>
+            </main>
+            <footer>
+              <div class="container">
+                <p>&copy; 2025 Website Generator</p>
+              </div>
+            </footer>
+          </body>
+          </html>
+          `;
+        } catch (error) {
+          console.error('Error updating website code:', error);
+          return res.status(500).json({
+            message: "Error updating website code",
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
+
+      const [updatedDesign] = await db
+        .update(WebsiteDesigns)
+        .set({
+          ...result.data,
+          updated_at: new Date(),
+        })
+        .where(eq(WebsiteDesigns.id, parseInt(req.params.id)))
+        .returning();
+
+      if (!updatedDesign) {
+        return res.status(404).json({ message: "Website design not found" });
+      }
+
+      res.json(updatedDesign);
+    } catch (error) {
+      console.error('Error updating website design:', error);
+      res.status(500).json({
+        message: "Error updating website design",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.delete("/api/website-designs/:id", async (req, res) => {
+    try {
+      const [deletedDesign] = await db
+        .delete(WebsiteDesigns)
+        .where(eq(WebsiteDesigns.id, parseInt(req.params.id)))
+        .returning();
+
+      if (!deletedDesign) {
+        return res.status(404).json({ message: "Website design not found" });
+      }
+
+      res.status(204).end();
+    } catch (error) {
+      console.error('Error deleting website design:', error);
+      res.status(500).json({
+        message: "Error deleting website design",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
   console.log('Route registration completed');
 
   const httpServer = createServer(app);
