@@ -3,7 +3,7 @@
 - 🌱 I’m currently learning ways to create
 - 💞️ I’m looking to collaborate on something new
 - 📫 How to reach me vaiba.app@gmail.com
-- ⚡ Fun fact: Sociaty has no moral objectivity
+- ⚡ Fun fact: learning is fun
 
 <!---
 VAIBA-App/VAIBA-App is a ✨ special ✨ repository because its `README.md` (this file) appears on your GitHub profile.
